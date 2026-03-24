@@ -180,7 +180,7 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-__pycache__/
+___pycache__/
 .venv/
 .env
 data/processed/*.txt
