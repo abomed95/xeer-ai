@@ -3,3 +3,10 @@ pillow
 pytesseract
 deep-translator
 python-dotenv
+
+chromadb
+sentence-transformers
+fastapi
+uvicorn
+streamlit
+requests
