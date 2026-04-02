@@ -184,3 +184,10 @@ ___pycache__/
 .venv/
 .env
 data/processed/*.txt
+
+# Xeer AI specific
+chroma_db/
+data/raw/
+data/pages/
+data/processed/
+*.log
