@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xeer AI — L'assistant IA du Xeer Ciise</title>
+  <meta name="description" content="Explorez le droit coutumier somali (Xeer Ciise) avec une IA de recherche sémantique : réponses structurées, citations de pages, en somali, français et anglais." />
+  <meta name="theme-color" content="#0c1728" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/xeer.css" />
+  <style>
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      padding: 40px 0 20px;
+      align-items: stretch;
+    }
+    @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+    .hero h1 {
+      font-size: clamp(2rem, 4.6vw, 3.3rem);
+      line-height: 1.12;
+      margin: 18px 0 14px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 em { font-style: normal; color: var(--gold2); }
+    .hero p.lead { color: var(--muted); font-size: 1.05rem; max-width: 34rem; }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+
+    .preview-chat { display: flex; flex-direction: column; gap: 12px; padding: 24px; }
+    .bubble {
+      padding: 13px 16px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      max-width: 88%;
+      line-height: 1.5;
+    }
+    .bubble.q { align-self: flex-end; background: linear-gradient(135deg, #1b3157, #16294a); border: 1px solid var(--line2); }
+    .bubble.a { align-self: flex-start; background: rgba(212, 175, 55, 0.08); border: 1px solid var(--line); }
+    .bubble .src { display: block; margin-top: 8px; font-size: 0.76rem; color: var(--gold2); }
+
+    .trust-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 0 26px; color: var(--muted); font-size: 0.85rem;
+    }
+    .pay-badge {
+      padding: 7px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem;
+      border: 1px solid var(--line2); background: rgba(255,255,255,0.04); color: var(--text);
+    }
+
+    section { padding: 44px 0 8px; }
+    .section-head { text-align: center; max-width: 620px; margin: 0 auto 30px; }
+    .section-head h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); margin: 12px 0 8px; letter-spacing: -0.01em; }
+    .section-head p { color: var(--muted); }
+
+    .feature { padding: 22px; }
+    .feature .icon {
+      width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center;
+      font-size: 1.25rem; margin-bottom: 12px;
+      background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(255,255,255,0.03));
+      border: 1px solid var(--line);
+    }
+    .feature h3 { margin: 0 0 6px; font-size: 1.02rem; }
+    .feature p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+    /* Tarifs */
+    .plan { position: relative; display: flex; flex-direction: column; }
+    .plan.popular { border-color: rgba(212, 175, 55, 0.55); box-shadow: 0 24px 60px rgba(212, 175, 55, 0.12); }
+    .plan .pop-tag {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .plan .price { font-size: 2.4rem; font-weight: 900; margin: 8px 0 0; letter-spacing: -0.02em; }
+    .plan .price small { font-size: 0.95rem; color: var(--muted); font-weight: 600; }
+    .plan ul { list-style: none; padding: 0; margin: 18px 0 22px; flex: 1; }
+    .plan ul li { padding: 7px 0; font-size: 0.92rem; color: var(--muted); display: flex; gap: 10px; }
+    .plan ul li::before { content: "✦"; color: var(--gold2); }
+
+    .apk-band {
+      margin-top: 50px; padding: 30px; display: grid; gap: 18px;
+      grid-template-columns: 1.3fr 0.7fr; align-items: center;
+    }
+    @media (max-width: 800px) { .apk-band { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span></a>
+      <div class="nav-links">
+        <a class="link" href="#features">Fonctionnalités</a>
+        <a class="link" href="#pricing">Tarifs</a>
+        <a class="link" href="#organisations">Organisations</a>
+        <a class="btn btn-secondary btn-sm" href="/app.html">Se connecter</a>
+        <a class="btn btn-primary btn-sm" href="/app.html?signup=1">Essai gratuit</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="card">
+        <span class="badge">Patrimoine juridique somali · IA</span>
+        <h1>Le savoir du <em>Xeer Ciise</em>, à portée de question.</h1>
+        <p class="lead">
+          Xeer AI répond à vos questions sur le droit coutumier somali à partir du
+          corpus numérisé du Xeer Ciise — avec des réponses structurées, des
+          citations de pages vérifiables et la mémoire de vos conversations.
+          En somali, français ou anglais.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/app.html?signup=1">Commencer gratuitement — 3 questions/mois</a>
+          <a class="btn btn-secondary" href="#pricing">Voir les tarifs</a>
+        </div>
+      </div>
+      <div class="card preview-chat" aria-hidden="true">
+        <span class="chip gold">Aperçu en direct</span>
+        <div class="bubble q">Waa maxay xeerka guurka ee beesha Ciise?</div>
+        <div class="bubble a">
+          🔹 <strong>Qeexid</strong> — Xeerka guurku waa nidaamka dhaqameed ee
+          lagu maamulo guurka iyo xiriirka qoyska…
+          <span class="src">📌 Xigasho : bogga 47 · sources vérifiées</span>
+        </div>
+        <div class="bubble q">Et en cas de litige entre familles ?</div>
+        <div class="bubble a">
+          🔹 <strong>Définition</strong> — Le règlement des litiges suit la
+          médiation des anciens (odayaal)…
+          <span class="src">📌 Citation : page 63 · mémoire de conversation active</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="trust-row">
+      Paiements sécurisés :
+      <span class="pay-badge">Waafi</span>
+      <span class="pay-badge">CAC Bank</span>
+      <span class="pay-badge">VISA</span>
+      <span class="pay-badge">MasterCard</span>
+    </div>
+
+    <section id="features">
+      <div class="section-head">
+        <span class="badge">Fonctionnalités</span>
+        <h2>Une plateforme pensée pour la fiabilité</h2>
+        <p>Chaque réponse s'appuie sur le corpus authentique, jamais sur l'improvisation.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card feature">
+          <div class="icon">🔎</div>
+          <h3>Recherche sémantique</h3>
+          <p>Le moteur RAG retrouve les passages les plus pertinents du corpus numérisé du Xeer Ciise.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon">📖</div>
+          <h3>Citations vérifiables</h3>
+          <p>Chaque réponse cite ses pages sources : définition, explication, importance.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon">🧠</div>
+          <h3>Mémoire de conversation</h3>
+          <p>Posez des questions de suivi : l'assistant garde le fil de l'échange.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon">🌍</div>
+          <h3>Multilingue</h3>
+          <p>Somali, français, anglais — l'assistant répond dans la langue de votre question.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon">📱</div>
+          <h3>Web &amp; mobile (APK)</h3>
+          <p>Application web installable (PWA) et application Android pour un accès partout.</p>
+        </div>
+        <div class="card feature">
+          <div class="icon">🛡️</div>
+          <h3>Comptes sécurisés</h3>
+          <p>Authentification chiffrée, quotas transparents et historique de paiements.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="section-head">
+        <span class="badge">Tarifs</span>
+        <h2>Simple et transparent</h2>
+        <p>Commencez gratuitement, passez à l'illimité quand vous en avez besoin.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card plan">
+          <h3>Gratuit</h3>
+          <p class="price">0 $<small> / pour toujours</small></p>
+          <ul>
+            <li>3 questions par mois</li>
+            <li>Réponses avec citations de pages</li>
+            <li>Somali · Français · English</li>
+          </ul>
+          <a class="btn btn-secondary btn-block" href="/app.html?signup=1">Créer un compte</a>
+        </div>
+        <div class="card plan popular">
+          <span class="badge pop-tag">Le plus populaire</span>
+          <h3>Premium</h3>
+          <p class="price">10 $<small> / mois</small></p>
+          <ul>
+            <li>Questions illimitées</li>
+            <li>Mémoire de conversation</li>
+            <li>Historique et sources détaillées</li>
+            <li>Support prioritaire</li>
+          </ul>
+          <a class="btn btn-primary btn-block" href="/app.html?signup=1&upgrade=1">Passer à Premium</a>
+        </div>
+        <div class="card plan">
+          <h3>Organisation</h3>
+          <p class="price">Sur devis<small> · prix négociable</small></p>
+          <ul>
+            <li>Tarif négocié selon vos besoins</li>
+            <li>Comptes multiples pour vos équipes</li>
+            <li>Quota personnalisé ou illimité</li>
+            <li>Accompagnement dédié</li>
+          </ul>
+          <a class="btn btn-secondary btn-block" href="#organisations">Contacter l'équipe</a>
+        </div>
+      </div>
+      <p class="muted" style="text-align:center; margin-top:18px; font-size:0.88rem;">
+        Paiement par <strong>Waafi</strong>, <strong>CAC Bank</strong>,
+        <strong>Visa</strong> et <strong>MasterCard</strong>. Sans engagement, annulable à tout moment.
+      </p>
+    </section>
+
+    <section id="organisations">
+      <div class="grid grid-2" style="align-items:start;">
+        <div>
+          <span class="badge">Organisations</span>
+          <h2 style="letter-spacing:-0.01em;">Universités, tribunaux, ONG, institutions</h2>
+          <p class="muted">
+            Vous êtes une organisation et souhaitez donner accès à Xeer AI à vos
+            équipes ? Nous construisons une offre sur mesure : tarif négocié,
+            comptes multiples, quotas adaptés et accompagnement dédié.
+          </p>
+          <p class="muted">Réponse de notre équipe sous 24 h.</p>
+        </div>
+        <form class="card" id="org-form">
+          <div class="field">
+            <label for="org-name">Votre nom</label>
+            <input class="input" id="org-name" required placeholder="Nom complet" />
+          </div>
+          <div class="field">
+            <label for="org-email">Email professionnel</label>
+            <input class="input" id="org-email" type="email" required placeholder="vous@organisation.org" />
+          </div>
+          <div class="field">
+            <label for="org-org">Organisation</label>
+            <input class="input" id="org-org" required placeholder="Nom de l'organisation" />
+          </div>
+          <div class="field">
+            <label for="org-msg">Vos besoins</label>
+            <textarea class="input" id="org-msg" rows="3" placeholder="Nombre d'utilisateurs, usage prévu…"></textarea>
+          </div>
+          <div class="alert" id="org-alert"></div>
+          <button class="btn btn-primary btn-block" type="submit">Demander un devis</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="card apk-band">
+      <div>
+        <span class="badge">Application mobile</span>
+        <h2 style="margin:12px 0 8px; letter-spacing:-0.01em;">Emportez le Xeer partout</h2>
+        <p class="muted" style="margin:0;">
+          Xeer AI est une application web progressive (PWA) : installez-la depuis
+          votre navigateur en un clic, ou téléchargez l'application Android (APK).
+          Même compte, même historique, sur tous vos appareils.
+        </p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <a class="btn btn-primary" href="/app.html">📲 Installer l'application web</a>
+        <a class="btn btn-secondary" href="https://github.com/abomed95/xeer-ai/releases" target="_blank" rel="noopener">🤖 Télécharger l'APK Android</a>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div>© 2026 Xeer AI — Préserver et transmettre le droit coutumier somali.</div>
+      <div>
+        <a class="link" href="/app.html" style="color:var(--muted); text-decoration:none;">Application</a> ·
+        <a class="link" href="#pricing" style="color:var(--muted); text-decoration:none;">Tarifs</a> ·
+        <a class="link" href="/admin.html" style="color:var(--muted); text-decoration:none;">Administration</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/assets/api.js"></script>
+  <script>
+    document.getElementById("org-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById("org-alert");
+      alertBox.className = "alert";
+      try {
+        const data = await XeerAPI.request("/api/billing/org-lead", {
+          method: "POST",
+          auth: false,
+          body: {
+            name: document.getElementById("org-name").value,
+            email: document.getElementById("org-email").value,
+            organization: document.getElementById("org-org").value,
+            message: document.getElementById("org-msg").value,
+          },
+        });
+        alertBox.textContent = data.message;
+        alertBox.className = "alert success show";
+        e.target.reset();
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      }
+    });
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

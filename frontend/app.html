@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xeer AI — Assistant</title>
+  <meta name="theme-color" content="#0c1728" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/xeer.css" />
+  <style>
+    body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+    .app-shell { display: flex; flex-direction: column; flex: 1; min-height: 0; width: min(920px, 100%); margin: 0 auto; padding: 0 14px; }
+
+    .app-nav { padding: 12px 0; border-bottom: 1px solid var(--line2); }
+
+    .chat-scroll { flex: 1; overflow-y: auto; padding: 20px 4px; display: flex; flex-direction: column; gap: 14px; }
+    .msg { max-width: 86%; padding: 14px 17px; border-radius: 18px; font-size: 0.95rem; white-space: pre-wrap; line-height: 1.55; }
+    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #1b3157, #16294a); border: 1px solid var(--line2); border-bottom-right-radius: 6px; }
+    .msg.bot { align-self: flex-start; background: rgba(212, 175, 55, 0.07); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+    .msg.bot.typing { color: var(--muted); font-style: italic; }
+
+    .sources { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+    .sources summary { cursor: pointer; font-size: 0.8rem; color: var(--gold2); font-weight: 700; }
+    .source-item { margin-top: 8px; font-size: 0.8rem; color: var(--muted); }
+    .source-item b { color: var(--gold2); }
+
+    .welcome { text-align: center; margin: auto; max-width: 30rem; }
+    .welcome .icon { font-size: 2.6rem; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .suggestions button { cursor: pointer; }
+
+    .composer { padding: 12px 0 16px; }
+    .composer-row { display: flex; gap: 10px; align-items: flex-end; }
+    .composer textarea {
+      flex: 1; resize: none; max-height: 130px;
+      padding: 13px 16px; border-radius: 16px;
+      border: 1px solid var(--line2); background: rgba(255,255,255,0.05);
+      color: var(--text); font-family: var(--font); font-size: 0.95rem; outline: none;
+    }
+    .composer textarea:focus { border-color: var(--gold); }
+    .quota-note { font-size: 0.78rem; color: var(--muted); margin-top: 8px; text-align: center; }
+    .quota-note b { color: var(--gold2); }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tabs button {
+      flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--line2);
+      background: transparent; color: var(--muted); font-weight: 700; font-family: var(--font); cursor: pointer;
+    }
+    .tabs button.active { background: rgba(212, 175, 55, 0.12); color: var(--gold2); border-color: var(--line); }
+
+    .provider-list { display: grid; gap: 10px; margin: 14px 0; }
+    .provider-btn {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line2);
+      background: rgba(255,255,255,0.04); color: var(--text); font-family: var(--font);
+      font-weight: 700; font-size: 0.92rem; cursor: pointer; text-align: left;
+    }
+    .provider-btn small { display: block; color: var(--muted); font-weight: 500; }
+    .provider-btn.selected { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="nav app-nav">
+      <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span></a>
+      <div class="nav-links" id="nav-user" style="display:none;">
+        <span class="chip gold" id="plan-chip">…</span>
+        <button class="btn btn-primary btn-sm" id="btn-upgrade" style="display:none;">✦ Premium</button>
+        <a class="link" href="/admin.html" id="link-admin" style="display:none;">Admin</a>
+        <button class="btn btn-ghost btn-sm" id="btn-logout">Déconnexion</button>
+      </div>
+    </nav>
+
+    <main class="chat-scroll" id="chat">
+      <div class="welcome" id="welcome">
+        <div class="icon">⚖️</div>
+        <h2 style="margin:10px 0 6px;">Salaan! Bienvenue sur Xeer AI</h2>
+        <p class="muted" style="font-size:0.92rem;">
+          Posez votre question sur le Xeer Ciise en somali, français ou anglais.
+          Chaque réponse cite ses pages sources.
+        </p>
+        <div class="suggestions">
+          <button class="chip">Waa maxay Xeerka Ciise?</button>
+          <button class="chip">Comment les litiges sont-ils réglés ?</button>
+          <button class="chip">What is the role of elders?</button>
+        </div>
+      </div>
+    </main>
+
+    <div class="composer">
+      <div class="alert" id="chat-alert"></div>
+      <div class="composer-row">
+        <textarea id="question" rows="1" placeholder="Votre question sur le Xeer…"></textarea>
+        <button class="btn btn-primary" id="btn-send">Envoyer</button>
+      </div>
+      <div class="quota-note" id="quota-note"></div>
+    </div>
+  </div>
+
+  <!-- ===== Modale Auth ===== -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal">
+      <h2>Xeer <span class="gold-text">AI</span></h2>
+      <p class="sub">Connectez-vous ou créez un compte gratuit (3 questions/mois).</p>
+      <div class="tabs">
+        <button id="tab-login" class="active">Connexion</button>
+        <button id="tab-register">Inscription</button>
+      </div>
+      <div class="field" id="f-name" style="display:none;">
+        <label>Nom complet</label>
+        <input class="input" id="auth-name" placeholder="Votre nom" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input class="input" id="auth-email" type="email" placeholder="vous@email.com" />
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input class="input" id="auth-password" type="password" placeholder="8 caractères minimum" />
+      </div>
+      <div class="alert" id="auth-alert"></div>
+      <button class="btn btn-primary btn-block" id="btn-auth">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- ===== Modale Paiement / Premium ===== -->
+  <div class="modal-backdrop" id="pay-modal">
+    <div class="modal">
+      <div id="pay-step-1">
+        <h2>Passer à <span class="gold-text">Premium</span></h2>
+        <p class="sub">10 $ / mois — questions illimitées, mémoire de conversation, support prioritaire.</p>
+        <div class="provider-list" id="provider-list">
+          <button class="provider-btn" data-provider="waafi" data-method="waafi">
+            <span>Waafi<small>Mobile money — Djibouti, Somalie, diaspora</small></span><span>📱</span>
+          </button>
+          <button class="provider-btn" data-provider="cacbank" data-method="cacpay">
+            <span>CAC Bank<small>CAC Pay / compte CAC International Bank</small></span><span>🏦</span>
+          </button>
+          <button class="provider-btn" data-provider="card" data-method="visa">
+            <span>Visa<small>Carte bancaire Visa</small></span><span>💳</span>
+          </button>
+          <button class="provider-btn" data-provider="card" data-method="mastercard">
+            <span>MasterCard<small>Carte bancaire MasterCard</small></span><span>💳</span>
+          </button>
+        </div>
+        <div class="field" id="f-phone" style="display:none;">
+          <label>Numéro Waafi</label>
+          <input class="input" id="pay-phone" placeholder="+253 77 00 00 00" />
+        </div>
+        <div class="alert" id="pay-alert"></div>
+        <button class="btn btn-primary btn-block" id="btn-checkout" disabled>Payer 10 $ / mois</button>
+        <button class="btn btn-ghost btn-block" id="btn-pay-close" style="margin-top:8px;">Plus tard</button>
+      </div>
+      <div id="pay-step-2" style="display:none;">
+        <h2>Confirmation du paiement</h2>
+        <p class="sub" id="pay-instructions"></p>
+        <div class="alert info show" id="pay-ref"></div>
+        <div class="alert" id="pay-alert-2"></div>
+        <button class="btn btn-primary btn-block" id="btn-confirm">J'ai payé — activer Premium</button>
+        <button class="btn btn-ghost btn-block" id="btn-pay-cancel" style="margin-top:8px;">Annuler</button>
+      </div>
+      <div id="pay-step-3" style="display:none; text-align:center;">
+        <div style="font-size:2.6rem;">🎉</div>
+        <h2>Bienvenue dans Premium !</h2>
+        <p class="sub">Votre abonnement est actif pour 30 jours. Vos questions sont désormais illimitées.</p>
+        <button class="btn btn-primary btn-block" id="btn-pay-done">Continuer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/api.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    let sessionId = null;
+    let authMode = "login";
+    let selectedProvider = null;
+    let selectedMethod = null;
+    let pendingReference = null;
+
+    /* ---------- Session / entête ---------- */
+    function renderUser(user) {
+      $("nav-user").style.display = "flex";
+      const chip = $("plan-chip");
+      if (user.plan === "premium") {
+        chip.textContent = "✦ Premium";
+      } else if (user.plan === "organization") {
+        chip.textContent = `🏛 ${user.org_name || "Organisation"}`;
+      } else {
+        chip.textContent = `Gratuit · ${user.questions_remaining}/${user.quota} restantes`;
+      }
+      $("btn-upgrade").style.display = user.plan === "free" ? "" : "none";
+      $("link-admin").style.display = user.role === "admin" ? "" : "none";
+      $("quota-note").innerHTML = user.plan === "free"
+        ? `Plan gratuit : <b>${user.questions_remaining}</b> question(s) restante(s) ce mois-ci — <a href="#" id="note-upgrade" style="color:var(--gold2)">passer à Premium (10 $/mois)</a>`
+        : "Questions illimitées · Merci de votre confiance ✦";
+      const note = $("note-upgrade");
+      if (note) note.addEventListener("click", (e) => { e.preventDefault(); openPayModal(); });
+    }
+
+    async function bootstrap() {
+      if (!XeerAPI.getToken()) {
+        openAuthModal(params.get("signup") ? "register" : "login");
+        return;
+      }
+      try {
+        const user = await XeerAPI.refreshUser();
+        renderUser(user);
+        if (params.get("upgrade") && user.plan === "free") openPayModal();
+      } catch {
+        XeerAPI.clearSession();
+        openAuthModal("login");
+      }
+    }
+
+    /* ---------- Auth ---------- */
+    function openAuthModal(mode) { setAuthMode(mode); $("auth-modal").classList.add("open"); }
+    function setAuthMode(mode) {
+      authMode = mode;
+      $("tab-login").classList.toggle("active", mode === "login");
+      $("tab-register").classList.toggle("active", mode === "register");
+      $("f-name").style.display = mode === "register" ? "" : "none";
+      $("btn-auth").textContent = mode === "register" ? "Créer mon compte gratuit" : "Se connecter";
+    }
+    $("tab-login").addEventListener("click", () => setAuthMode("login"));
+    $("tab-register").addEventListener("click", () => setAuthMode("register"));
+
+    $("btn-auth").addEventListener("click", async () => {
+      const alertBox = $("auth-alert");
+      alertBox.className = "alert";
+      $("btn-auth").disabled = true;
+      try {
+        const body = {
+          email: $("auth-email").value.trim(),
+          password: $("auth-password").value,
+        };
+        if (authMode === "register") body.full_name = $("auth-name").value.trim();
+        const data = await XeerAPI.request(`/api/auth/${authMode}`, { method: "POST", body, auth: false });
+        XeerAPI.setSession(data.token, data.user);
+        $("auth-modal").classList.remove("open");
+        renderUser(data.user);
+        if (params.get("upgrade") && data.user.plan === "free") openPayModal();
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      } finally {
+        $("btn-auth").disabled = false;
+      }
+    });
+
+    $("btn-logout").addEventListener("click", () => {
+      XeerAPI.clearSession();
+      location.href = "/";
+    });
+
+    /* ---------- Chat ---------- */
+    function addMessage(text, who) {
+      $("welcome")?.remove();
+      const div = document.createElement("div");
+      div.className = `msg ${who}`;
+      div.textContent = text;
+      $("chat").appendChild(div);
+      $("chat").scrollTop = $("chat").scrollHeight;
+      return div;
+    }
+
+    function addSources(msgDiv, sources) {
+      if (!sources || !sources.length) return;
+      const details = document.createElement("details");
+      details.className = "sources";
+      details.innerHTML = `<summary>📌 ${sources.length} source(s) — pages citées</summary>` +
+        sources.map(s =>
+          `<div class="source-item"><b>Page ${escapeHtml(s.page)}</b> — ${escapeHtml(s.excerpt)}</div>`
+        ).join("");
+      msgDiv.appendChild(details);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    async function sendQuestion() {
+      const input = $("question");
+      const question = input.value.trim();
+      if (!question) return;
+      if (!XeerAPI.getToken()) { openAuthModal("login"); return; }
+
+      const alertBox = $("chat-alert");
+      alertBox.className = "alert";
+      addMessage(question, "user");
+      input.value = "";
+      const typing = addMessage("Xeer AI réfléchit…", "bot");
+      typing.classList.add("typing");
+      $("btn-send").disabled = true;
+
+      try {
+        const data = await XeerAPI.request("/api/chat/ask", {
+          method: "POST",
+          body: { question, session_id: sessionId },
+        });
+        sessionId = data.session_id;
+        typing.classList.remove("typing");
+        typing.textContent = data.answer;
+        addSources(typing, data.sources);
+        const user = await XeerAPI.refreshUser();
+        renderUser(user);
+      } catch (err) {
+        typing.remove();
+        if (err.status === 402) {
+          openPayModal();
+          alertBox.textContent = err.message;
+          alertBox.className = "alert info show";
+        } else {
+          alertBox.textContent = err.message;
+          alertBox.className = "alert error show";
+        }
+      } finally {
+        $("btn-send").disabled = false;
+        $("chat").scrollTop = $("chat").scrollHeight;
+      }
+    }
+
+    $("btn-send").addEventListener("click", sendQuestion);
+    $("question").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
+    });
+    document.querySelectorAll(".suggestions .chip").forEach(btn =>
+      btn.addEventListener("click", () => { $("question").value = btn.textContent; sendQuestion(); })
+    );
+
+    /* ---------- Paiement ---------- */
+    function openPayModal() {
+      $("pay-step-1").style.display = "";
+      $("pay-step-2").style.display = "none";
+      $("pay-step-3").style.display = "none";
+      $("pay-modal").classList.add("open");
+    }
+    $("btn-upgrade").addEventListener("click", openPayModal);
+    $("btn-pay-close").addEventListener("click", () => $("pay-modal").classList.remove("open"));
+    $("btn-pay-cancel").addEventListener("click", () => $("pay-modal").classList.remove("open"));
+
+    document.querySelectorAll(".provider-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".provider-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedProvider = btn.dataset.provider;
+        selectedMethod = btn.dataset.method;
+        $("f-phone").style.display = selectedProvider === "waafi" ? "" : "none";
+        $("btn-checkout").disabled = false;
+      });
+    });
+
+    $("btn-checkout").addEventListener("click", async () => {
+      const alertBox = $("pay-alert");
+      alertBox.className = "alert";
+      if (selectedProvider === "waafi" && !$("pay-phone").value.trim()) {
+        alertBox.textContent = "Entrez votre numéro Waafi.";
+        alertBox.className = "alert error show";
+        return;
+      }
+      $("btn-checkout").disabled = true;
+      try {
+        const data = await XeerAPI.request("/api/billing/checkout", {
+          method: "POST",
+          body: {
+            provider: selectedProvider,
+            method: selectedMethod,
+            phone: $("pay-phone").value.trim(),
+            plan: "premium",
+          },
+        });
+        pendingReference = data.reference;
+        $("pay-instructions").textContent = data.instructions;
+        $("pay-ref").textContent = `Référence : ${data.reference} · Montant : ${data.amount_usd} $`;
+        $("pay-step-1").style.display = "none";
+        $("pay-step-2").style.display = "";
+        if (data.status === "completed") showPaySuccess();
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      } finally {
+        $("btn-checkout").disabled = false;
+      }
+    });
+
+    $("btn-confirm").addEventListener("click", async () => {
+      const alertBox = $("pay-alert-2");
+      alertBox.className = "alert";
+      $("btn-confirm").disabled = true;
+      try {
+        await XeerAPI.request("/api/billing/confirm", {
+          method: "POST",
+          body: { reference: pendingReference },
+        });
+        showPaySuccess();
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      } finally {
+        $("btn-confirm").disabled = false;
+      }
+    });
+
+    async function showPaySuccess() {
+      $("pay-step-1").style.display = "none";
+      $("pay-step-2").style.display = "none";
+      $("pay-step-3").style.display = "";
+      try {
+        const user = await XeerAPI.refreshUser();
+        renderUser(user);
+      } catch { /* non bloquant */ }
+    }
+    $("btn-pay-done").addEventListener("click", () => $("pay-modal").classList.remove("open"));
+
+    /* ---------- PWA ---------- */
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

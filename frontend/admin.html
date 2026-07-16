@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xeer AI — Administration</title>
+  <meta name="theme-color" content="#0c1728" />
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/xeer.css" />
+  <style>
+    body { padding-bottom: 60px; }
+    .page-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 20px; }
+    .page-head h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
+
+    .tile { padding: 18px 20px; }
+    .tile .label { font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .tile .value { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px; }
+    .tile .sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .chart-card { padding: 20px 20px 10px; }
+    .chart-card h3 { margin: 0 0 2px; font-size: 0.98rem; }
+    .chart-card .sub { font-size: 0.8rem; color: var(--muted); margin: 0 0 10px; }
+    .chart-wrap { position: relative; }
+    svg.chart { width: 100%; height: 200px; display: block; }
+    .tooltip {
+      position: absolute; pointer-events: none; display: none; z-index: 10;
+      background: #101f36; border: 1px solid var(--line); border-radius: 10px;
+      padding: 8px 12px; font-size: 0.78rem; box-shadow: var(--shadow); white-space: nowrap;
+    }
+    .tooltip b { color: var(--gold2); }
+
+    .section-title { margin: 34px 0 12px; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
+    select.input.mini { width: auto; padding: 6px 10px; font-size: 0.82rem; }
+    .gate { max-width: 420px; margin: 12vh auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span> <span class="chip gold" style="margin-left:6px;">Admin</span></a>
+      <div class="nav-links">
+        <a class="link" href="/app.html">← Application</a>
+        <button class="btn btn-ghost btn-sm" id="btn-logout">Déconnexion</button>
+      </div>
+    </nav>
+
+    <!-- Porte d'accès admin -->
+    <div class="card gate" id="gate" style="display:none;">
+      <h2 style="margin-top:0;">Espace administrateur</h2>
+      <p class="muted" style="font-size:0.9rem;">Connectez-vous avec un compte administrateur.</p>
+      <div class="field"><label>Email</label><input class="input" id="g-email" type="email" /></div>
+      <div class="field"><label>Mot de passe</label><input class="input" id="g-password" type="password" /></div>
+      <div class="alert" id="g-alert"></div>
+      <button class="btn btn-primary btn-block" id="g-login">Se connecter</button>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+      <div class="page-head">
+        <h1>Tableau de bord</h1>
+        <span class="muted" style="font-size:0.85rem;" id="refresh-note"></span>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid grid-4" id="tiles"></div>
+
+      <!-- Graphiques -->
+      <div class="grid grid-2" style="margin-top:18px;">
+        <div class="card chart-card">
+          <h3>Questions posées</h3>
+          <p class="sub">30 derniers jours</p>
+          <div class="chart-wrap" id="chart-questions"></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Revenus encaissés (USD)</h3>
+          <p class="sub">30 derniers jours · Waafi, CAC Bank, Visa, MasterCard</p>
+          <div class="chart-wrap" id="chart-revenue"></div>
+        </div>
+      </div>
+
+      <!-- Utilisateurs -->
+      <h2 class="section-title">👥 Utilisateurs <input class="input mini" id="user-search" placeholder="Rechercher…" style="width:220px;" /></h2>
+      <div class="card table-wrap" style="padding:8px 18px;">
+        <table class="data" id="users-table">
+          <thead><tr>
+            <th>Email</th><th>Nom</th><th>Plan</th><th>Utilisation</th><th>Expire</th><th>Modifier le plan</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Paiements -->
+      <h2 class="section-title">💳 Paiements</h2>
+      <div class="card table-wrap" style="padding:8px 18px;">
+        <table class="data" id="payments-table">
+          <thead><tr>
+            <th>Date</th><th>Email</th><th>Fournisseur</th><th>Méthode</th><th>Montant</th><th>Statut</th><th>Référence</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Demandes organisations -->
+      <h2 class="section-title">🏛 Demandes Organisations (prix négociable)</h2>
+      <div class="card table-wrap" style="padding:8px 18px;">
+        <table class="data" id="leads-table">
+          <thead><tr>
+            <th>Date</th><th>Nom</th><th>Email</th><th>Organisation</th><th>Message</th><th>Statut</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/api.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    // Palette graphique validée (surface #0c1728) : questions = bleu, revenus = or.
+    const BLUE = "#4f8fd0", GOLD = "#ad8c1d";
+
+    /* ---------- Accès ---------- */
+    async function bootstrap() {
+      if (!XeerAPI.getToken()) return showGate();
+      try {
+        const user = await XeerAPI.refreshUser();
+        if (user.role !== "admin") return showGate("Ce compte n'est pas administrateur.");
+        showDashboard();
+      } catch { showGate(); }
+    }
+    function showGate(message) {
+      $("gate").style.display = "";
+      $("dashboard").style.display = "none";
+      if (message) {
+        $("g-alert").textContent = message;
+        $("g-alert").className = "alert error show";
+      }
+    }
+    $("g-login").addEventListener("click", async () => {
+      const alertBox = $("g-alert");
+      alertBox.className = "alert";
+      try {
+        const data = await XeerAPI.request("/api/auth/login", {
+          method: "POST", auth: false,
+          body: { email: $("g-email").value.trim(), password: $("g-password").value },
+        });
+        if (data.user.role !== "admin") return showGate("Ce compte n'est pas administrateur.");
+        XeerAPI.setSession(data.token, data.user);
+        showGate("");
+        $("g-alert").className = "alert";
+        showDashboard();
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      }
+    });
+    $("btn-logout").addEventListener("click", () => { XeerAPI.clearSession(); location.href = "/"; });
+
+    /* ---------- Tableau de bord ---------- */
+    async function showDashboard() {
+      $("gate").style.display = "none";
+      $("dashboard").style.display = "";
+      await Promise.all([loadStats(), loadUsers(), loadPayments(), loadLeads()]);
+      $("refresh-note").textContent = "Actualisé à " + new Date().toLocaleTimeString("fr-FR");
+    }
+
+    const fmtUSD = (v) => v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " $";
+
+    async function loadStats() {
+      const s = await XeerAPI.request("/api/admin/stats");
+      const tiles = [
+        { label: "Utilisateurs", value: s.users.total, sub: `+${s.users.new_this_month} ce mois-ci` },
+        { label: "Abonnés Premium", value: s.users.premium_active, sub: `${s.users.organization_active} compte(s) organisation` },
+        { label: "MRR (revenu mensuel)", value: fmtUSD(s.revenue.mrr_usd), sub: `Encaissé ce mois : ${fmtUSD(s.revenue.this_month_usd)}` },
+        { label: "Questions ce mois", value: s.questions.this_month, sub: `${s.questions.total} au total` },
+      ];
+      $("tiles").innerHTML = tiles.map(t => `
+        <div class="card tile">
+          <div class="label">${t.label}</div>
+          <div class="value">${t.value}</div>
+          <div class="sub">${t.sub}</div>
+        </div>`).join("");
+      drawLineChart($("chart-questions"), s.series.questions_daily, "count", BLUE, v => `${v} question(s)`);
+      drawBarChart($("chart-revenue"), s.series.revenue_daily, "total_usd", GOLD, v => `${v.toFixed(2)} $`);
+    }
+
+    /* Remplit les 30 derniers jours (les jours sans donnée = 0). */
+    function fillDays(series, key) {
+      const map = Object.fromEntries(series.map(r => [r.day, r[key]]));
+      const out = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000);
+        const day = d.toISOString().slice(0, 10);
+        out.push({ day, value: map[day] || 0 });
+      }
+      return out;
+    }
+    const dayLabel = (day) =>
+      new Date(day + "T00:00:00Z").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+    const NS = "http://www.w3.org/2000/svg";
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      return el;
+    }
+    function chartBase(container, data) {
+      container.innerHTML = "";
+      const W = 460, H = 200, pad = { l: 34, r: 8, t: 12, b: 22 };
+      const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart" });
+      const max = Math.max(1, ...data.map(d => d.value));
+      const x = (i) => pad.l + (i / (data.length - 1)) * (W - pad.l - pad.r);
+      const y = (v) => H - pad.b - (v / max) * (H - pad.t - pad.b);
+      // grille recessive : 3 lignes + labels d'axe
+      for (const frac of [0, 0.5, 1]) {
+        const v = max * frac, yy = y(v);
+        svg.appendChild(svgEl("line", { x1: pad.l, x2: W - pad.r, y1: yy, y2: yy, stroke: "rgba(255,255,255,0.08)", "stroke-width": 1 }));
+        const label = svgEl("text", { x: pad.l - 6, y: yy + 3, "text-anchor": "end", fill: "#9fb0c6", "font-size": 9, "font-family": "Inter, sans-serif" });
+        label.textContent = Math.round(v);
+        svg.appendChild(label);
+      }
+      // labels de temps : premier et dernier jour
+      for (const i of [0, data.length - 1]) {
+        const label = svgEl("text", { x: x(i), y: H - 6, "text-anchor": i === 0 ? "start" : "end", fill: "#9fb0c6", "font-size": 9, "font-family": "Inter, sans-serif" });
+        label.textContent = dayLabel(data[i].day);
+        svg.appendChild(label);
+      }
+      const tooltip = document.createElement("div");
+      tooltip.className = "tooltip";
+      container.appendChild(tooltip);
+      return { svg, x, y, W, H, pad, tooltip };
+    }
+    function showTip(container, tooltip, evt, html) {
+      tooltip.innerHTML = html;
+      tooltip.style.display = "block";
+      const rect = container.getBoundingClientRect();
+      let left = evt.clientX - rect.left + 12;
+      tooltip.style.top = (evt.clientY - rect.top - 34) + "px";
+      if (left + tooltip.offsetWidth > rect.width) left -= tooltip.offsetWidth + 24;
+      tooltip.style.left = left + "px";
+    }
+
+    function drawLineChart(container, series, key, color, fmt) {
+      const data = fillDays(series, key);
+      const { svg, x, y, H, pad, tooltip } = chartBase(container, data);
+      const path = data.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(" ");
+      const area = `${path} L${x(data.length - 1).toFixed(1)},${H - pad.b} L${x(0).toFixed(1)},${H - pad.b} Z`;
+      svg.appendChild(svgEl("path", { d: area, fill: color, opacity: 0.12 }));
+      svg.appendChild(svgEl("path", { d: path, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      const cursor = svgEl("line", { y1: pad.t, y2: H - pad.b, stroke: "rgba(255,255,255,0.25)", "stroke-width": 1, visibility: "hidden" });
+      const dot = svgEl("circle", { r: 4, fill: color, stroke: "#0c1728", "stroke-width": 2, visibility: "hidden" });
+      svg.appendChild(cursor); svg.appendChild(dot);
+      svg.addEventListener("mousemove", (evt) => {
+        const box = svg.getBoundingClientRect();
+        const mx = (evt.clientX - box.left) / box.width * 460;
+        const i = Math.max(0, Math.min(data.length - 1, Math.round((mx - pad.l) / (460 - pad.l - 8) * (data.length - 1))));
+        cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i)); cursor.setAttribute("visibility", "visible");
+        dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(data[i].value)); dot.setAttribute("visibility", "visible");
+        showTip(container, tooltip, evt, `<b>${dayLabel(data[i].day)}</b> — ${fmt(data[i].value)}`);
+      });
+      svg.addEventListener("mouseleave", () => {
+        cursor.setAttribute("visibility", "hidden");
+        dot.setAttribute("visibility", "hidden");
+        tooltip.style.display = "none";
+      });
+      container.appendChild(svg);
+    }
+
+    function drawBarChart(container, series, key, color, fmt) {
+      const data = fillDays(series, key);
+      const { svg, x, y, H, pad, tooltip } = chartBase(container, data);
+      const slot = (460 - pad.l - 8) / data.length;
+      const bw = Math.max(3, slot - 2); // 2px d'écart entre barres
+      data.forEach((d, i) => {
+        const yy = y(d.value), h = Math.max(0, H - pad.b - yy);
+        const bar = svgEl("path", {
+          d: roundedBar(x(i) - bw / 2, yy, bw, h, Math.min(4, bw / 2)),
+          fill: color,
+        });
+        bar.addEventListener("mousemove", (evt) =>
+          showTip(container, tooltip, evt, `<b>${dayLabel(d.day)}</b> — ${fmt(d.value)}`));
+        bar.addEventListener("mouseleave", () => tooltip.style.display = "none");
+        svg.appendChild(bar);
+      });
+      container.appendChild(svg);
+    }
+    // barre ancrée à la ligne de base, coins arrondis en haut (extrémité de donnée)
+    function roundedBar(x0, y0, w, h, r) {
+      if (h <= 0) return `M${x0},${y0}`;
+      r = Math.min(r, h);
+      return `M${x0},${y0 + h} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + w - r} Q${x0 + w},${y0} ${x0 + w},${y0 + r} V${y0 + h} Z`;
+    }
+
+    /* ---------- Tables ---------- */
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("fr-FR") : "—";
+    const planChip = (p) => p === "premium" ? '<span class="chip gold">✦ Premium</span>'
+      : p === "organization" ? '<span class="chip good">🏛 Organisation</span>'
+      : '<span class="chip">Gratuit</span>';
+
+    async function loadUsers() {
+      const q = $("user-search").value.trim();
+      const data = await XeerAPI.request(`/api/admin/users?q=${encodeURIComponent(q)}`);
+      $("users-table").querySelector("tbody").innerHTML = data.users.map(u => `
+        <tr>
+          <td>${esc(u.email)}${u.role === "admin" ? ' <span class="chip warn">admin</span>' : ""}</td>
+          <td>${esc(u.full_name) || "—"}</td>
+          <td>${planChip(u.plan)}</td>
+          <td>${u.questions_used}${u.quota != null ? " / " + u.quota : " (illimité)"}</td>
+          <td>${fmtDate(u.plan_expires_at)}</td>
+          <td>
+            <select class="input mini" data-uid="${u.id}">
+              <option value="">— choisir —</option>
+              <option value="free">Gratuit</option>
+              <option value="premium">Premium (30 j)</option>
+              <option value="organization">Organisation (365 j)</option>
+            </select>
+          </td>
+        </tr>`).join("");
+      $("users-table").querySelectorAll("select[data-uid]").forEach(sel =>
+        sel.addEventListener("change", async () => {
+          if (!sel.value) return;
+          const body = { plan: sel.value, days: sel.value === "organization" ? 365 : 30 };
+          await XeerAPI.request(`/api/admin/users/${sel.dataset.uid}/plan`, { method: "PUT", body });
+          await Promise.all([loadUsers(), loadStats()]);
+        })
+      );
+    }
+    let searchTimer;
+    $("user-search").addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(loadUsers, 300);
+    });
+
+    const statusChip = (s) => s === "completed" ? '<span class="chip good">réussi</span>'
+      : s === "failed" ? '<span class="chip bad">échoué</span>'
+      : '<span class="chip warn">en attente</span>';
+
+    async function loadPayments() {
+      const data = await XeerAPI.request("/api/admin/payments");
+      $("payments-table").querySelector("tbody").innerHTML = data.payments.length
+        ? data.payments.map(p => `
+          <tr>
+            <td>${fmtDate(p.created_at)}</td>
+            <td>${esc(p.email)}</td>
+            <td>${esc(p.provider)}</td>
+            <td>${esc(p.method) || "—"}</td>
+            <td>${p.amount_usd.toFixed(2)} $</td>
+            <td>${statusChip(p.status)}</td>
+            <td class="muted">${esc(p.reference)}</td>
+          </tr>`).join("")
+        : '<tr><td colspan="7" class="muted">Aucun paiement pour le moment.</td></tr>';
+    }
+
+    async function loadLeads() {
+      const data = await XeerAPI.request("/api/admin/leads");
+      $("leads-table").querySelector("tbody").innerHTML = data.leads.length
+        ? data.leads.map(l => `
+          <tr>
+            <td>${fmtDate(l.created_at)}</td>
+            <td>${esc(l.name)}</td>
+            <td>${esc(l.email)}</td>
+            <td>${esc(l.organization)}</td>
+            <td style="white-space:normal; max-width:280px;">${esc(l.message) || "—"}</td>
+            <td>
+              <select class="input mini" data-lid="${l.id}">
+                <option value="new" ${l.status === "new" ? "selected" : ""}>🆕 nouveau</option>
+                <option value="contacted" ${l.status === "contacted" ? "selected" : ""}>📞 contacté</option>
+                <option value="closed" ${l.status === "closed" ? "selected" : ""}>✅ clôturé</option>
+              </select>
+            </td>
+          </tr>`).join("")
+        : '<tr><td colspan="6" class="muted">Aucune demande pour le moment.</td></tr>';
+      $("leads-table").querySelectorAll("select[data-lid]").forEach(sel =>
+        sel.addEventListener("change", () =>
+          XeerAPI.request(`/api/admin/leads/${sel.dataset.lid}/status`, {
+            method: "PUT", body: { status: sel.value },
+          }))
+      );
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

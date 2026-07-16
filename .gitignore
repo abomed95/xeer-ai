@@ -191,3 +191,5 @@ data/raw/
 data/pages/
 data/processed/
 *.log
+# Xeer AI
+xeer.db
