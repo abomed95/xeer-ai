@@ -1,11 +1,10 @@
-"""Routes de chat : questions au moteur RAG, avec quota par abonnement."""
-from uuid import uuid4
-
+"""Routes de chat : questions au moteur RAG, conversations persistées, feedback."""
 from fastapi import APIRouter, Depends, HTTPException
 
+from app import config
 from app.deps import get_current_user
-from app.schemas import AskRequest, AskResponse, SourceItem
-from app.services import rag
+from app.schemas import AskRequest, AskResponse, FeedbackRequest, SourceItem
+from app.services import conversations, rag
 from app.services.accounts import log_question, questions_used_this_month, quota_for
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -28,17 +27,22 @@ def ask_question(payload: AskRequest, user: dict = Depends(get_current_user)):
             ),
         )
 
-    session_id = (payload.session_id or "").strip() or str(uuid4())
+    # conversation existante (vérifiée) ou nouvelle
+    conv_id = (payload.conversation_id or "").strip()
+    if conv_id:
+        if conversations.get_conversation(conv_id, user["id"]) is None:
+            raise HTTPException(status_code=404, detail="Conversation introuvable.")
+    else:
+        conv_id = conversations.create_conversation(user["id"], title=question)
+
+    history = conversations.history_for_llm(conv_id, config.MAX_HISTORY_MESSAGES)
 
     try:
-        answer, results = rag.answer_question(question, payload.top_k, session_id)
+        answer, results = rag.answer_question(question, payload.top_k, history)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-
-    log_question(user["id"], question)
-    used += 1
 
     sources = [
         SourceItem(
@@ -53,8 +57,16 @@ def ask_question(payload: AskRequest, user: dict = Depends(get_current_user)):
         for r in results
     ]
 
+    conversations.add_message(conv_id, "user", question)
+    message_id = conversations.add_message(
+        conv_id, "assistant", answer, sources=[s.model_dump() for s in sources]
+    )
+    log_question(user["id"], question)
+    used += 1
+
     return AskResponse(
-        session_id=session_id,
+        conversation_id=conv_id,
+        message_id=message_id,
         question=question,
         answer=answer,
         sources=sources,
@@ -62,12 +74,36 @@ def ask_question(payload: AskRequest, user: dict = Depends(get_current_user)):
     )
 
 
-@router.get("/sessions/{session_id}")
-def get_session_messages(session_id: str, user: dict = Depends(get_current_user)):
-    return {"session_id": session_id, "history": rag.get_history(session_id)}
+@router.get("/conversations")
+def my_conversations(user: dict = Depends(get_current_user)):
+    return {"conversations": conversations.list_conversations(user["id"])}
 
 
-@router.delete("/sessions/{session_id}")
-def clear_session(session_id: str, user: dict = Depends(get_current_user)):
-    rag.clear_session(session_id)
-    return {"message": "Session supprimée", "session_id": session_id}
+@router.get("/conversations/{conv_id}")
+def conversation_messages(conv_id: str, user: dict = Depends(get_current_user)):
+    conv = conversations.get_conversation(conv_id, user["id"])
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation introuvable.")
+    return {
+        "conversation_id": conv_id,
+        "title": conv["title"],
+        "messages": conversations.get_messages(conv_id),
+    }
+
+
+@router.delete("/conversations/{conv_id}")
+def remove_conversation(conv_id: str, user: dict = Depends(get_current_user)):
+    if not conversations.delete_conversation(conv_id, user["id"]):
+        raise HTTPException(status_code=404, detail="Conversation introuvable.")
+    return {"message": "Conversation supprimée", "conversation_id": conv_id}
+
+
+@router.post("/messages/{message_id}/feedback")
+def message_feedback(
+    message_id: int, payload: FeedbackRequest, user: dict = Depends(get_current_user)
+):
+    if payload.rating not in (1, -1):
+        raise HTTPException(status_code=400, detail="Le feedback doit être 1 ou -1.")
+    if not conversations.set_feedback(message_id, user["id"], payload.rating):
+        raise HTTPException(status_code=404, detail="Message introuvable.")
+    return {"ok": True}

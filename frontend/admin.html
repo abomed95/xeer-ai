@@ -175,6 +175,8 @@
         { label: "Abonnés Premium", value: s.users.premium_active, sub: `${s.users.organization_active} compte(s) organisation` },
         { label: "MRR (revenu mensuel)", value: fmtUSD(s.revenue.mrr_usd), sub: `Encaissé ce mois : ${fmtUSD(s.revenue.this_month_usd)}` },
         { label: "Questions ce mois", value: s.questions.this_month, sub: `${s.questions.total} au total` },
+        { label: "Satisfaction", value: s.feedback.satisfaction_pct == null ? "—" : s.feedback.satisfaction_pct + " %",
+          sub: `👍 ${s.feedback.up} · 👎 ${s.feedback.down}` },
       ];
       $("tiles").innerHTML = tiles.map(t => `
         <div class="card tile">

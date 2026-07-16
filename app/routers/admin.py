@@ -60,6 +60,11 @@ def stats(admin: dict = Depends(require_admin)):
         new_leads = db.execute(
             "SELECT COUNT(*) AS n FROM org_leads WHERE status = 'new'"
         ).fetchone()["n"]
+        feedback = db.execute(
+            "SELECT COALESCE(SUM(CASE WHEN feedback = 1 THEN 1 ELSE 0 END), 0) AS up, "
+            "COALESCE(SUM(CASE WHEN feedback = -1 THEN 1 ELSE 0 END), 0) AS down "
+            "FROM messages WHERE feedback IS NOT NULL"
+        ).fetchone()
 
         # Séries des 30 derniers jours (questions et revenus) pour les graphiques
         since = (now - timedelta(days=29)).strftime("%Y-%m-%d")
@@ -89,6 +94,14 @@ def stats(admin: dict = Depends(require_admin)):
             "organization_active": org_active,
         },
         "questions": {"this_month": questions_month, "total": questions_total},
+        "feedback": {
+            "up": feedback["up"],
+            "down": feedback["down"],
+            "satisfaction_pct": (
+                round(100 * feedback["up"] / (feedback["up"] + feedback["down"]))
+                if (feedback["up"] + feedback["down"]) else None
+            ),
+        },
         "revenue": {
             "this_month_usd": revenue_month,
             "total_usd": revenue_total,

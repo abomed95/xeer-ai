@@ -9,9 +9,6 @@ from typing import Any
 
 from app import config
 
-# mémoire de conversation en RAM, par session
-conversation_memory: dict[str, list[dict[str, str]]] = {}
-
 _embed_model = None
 _client_db = None
 _collection = None
@@ -105,44 +102,33 @@ def build_context(results: list[dict[str, Any]]) -> str:
     return "\n\n".join(parts)
 
 
-def get_history(session_id: str) -> list[dict[str, str]]:
-    return conversation_memory.get(session_id, [])
-
-
-def save_to_history(session_id: str, user_question: str, assistant_answer: str):
-    history = conversation_memory.setdefault(session_id, [])
-    history.append({"role": "user", "content": user_question})
-    history.append({"role": "assistant", "content": assistant_answer})
-    conversation_memory[session_id] = history[-config.MAX_HISTORY_MESSAGES:]
-
-
-def clear_session(session_id: str):
-    conversation_memory.pop(session_id, None)
-
-
 SYSTEM_PROMPT = """
 Waxaad tahay khabiir ku takhasusay Xeer Ciise iyo dhaqanka Soomaaliyeed.
+You are an expert on Xeer Ciise, the Somali customary law tradition.
 
-Waajibaadkaaga:
-- Ka jawaab su'aalaha si cad, sax ah, oo kooban.
-- Isticmaal kaliya macluumaadka laga helay sources-ka.
-- Tixgeli su'aalihii iyo jawaabihii hore haddii ay jiraan si aad u fahanto macnaha guud.
-- Ha samayn wax aan ku jirin xogta.
+Règles fondamentales :
+- Réponds UNIQUEMENT à partir des informations trouvées dans les sources fournies.
+- N'invente jamais rien qui ne figure pas dans les sources.
+- Tiens compte des questions et réponses précédentes pour comprendre le contexte.
+- Réponds toujours DANS LA LANGUE DE LA QUESTION : somali, arabe, français ou anglais.
 
-Qaabka jawaabta:
-1. 🔹 Qeexid (Definition) — hal ilaa laba sadar
-2. 🔹 Sharaxaad (Explanation) — faahfaahin kooban
-3. 🔹 Muhiimadda (Importance) — sababta ay muhiim u tahay
+Structure de la réponse (3 parties, avec les titres dans la langue de la question) :
+1. 🔹 Définition — 1 à 2 lignes
+   (somali : Qeexid · arabe : التعريف · anglais : Definition)
+2. 🔹 Explication — développement concis
+   (somali : Sharaxaad · arabe : الشرح · anglais : Explanation)
+3. 🔹 Importance — pourquoi c'est important
+   (somali : Muhiimadda · arabe : الأهمية · anglais : Importance)
 
-Xeerar:
-- Ku jawaab luqadda su'aasha
-- Haddii su'aashu tahay su'aal daba socota, ku xir jawaabta wixii hore
-- Ha ku darin wax ka baxsan sources-ka
-- Jawaabta ha ka badnaan 6–8 sadar
+Contraintes :
+- Si la question fait suite à une question précédente, relie naturellement la réponse.
+- Ne recopie pas le texte brut : synthétise et explique.
+- 6 à 10 lignes maximum.
+- Pour l'arabe, rédige en arabe standard moderne clair ; les termes somalis du
+  Xeer (odayaal, diya, xeer…) restent en somali, suivis d'une courte glose.
 
-Dhamaadka:
-Ku dar:
-📌 Xigasho: bogga XXX
+Termine toujours par la citation de la page la plus pertinente :
+📌 Xigasho / المرجع / Citation : bogga/page XXX
 """
 
 
@@ -167,18 +153,18 @@ def generate_openai_answer(
         messages.extend(history)
 
     user_prompt = f"""
-Su'aasha hadda:
+Question actuelle :
 {question}
 
-Sources:
+Sources :
 {context}
 
-Fadlan:
-- Ka jawaab si nidaamsan
-- Isticmaal 3 qaybood: Qeexid, Sharaxaad, Muhiimadda
-- Haddii su'aashu ku xiran tahay su'aal hore, si dabiici ah u xiriiri
-- Ha ku celin qoraalka sida uu yahay, balse soo koob oo sharax
-- Ku dar tixraac bogga ugu muhiimsan
+Rappels :
+- Réponds dans la langue de la question (somali, arabe, français ou anglais)
+- Structure en 3 parties : Définition, Explication, Importance
+- Si la question fait suite à une question précédente, relie naturellement
+- Synthétise, n'invente rien hors des sources
+- Termine par la citation de la page la plus pertinente
 """
     messages.append({"role": "user", "content": user_prompt})
 
@@ -186,7 +172,7 @@ Fadlan:
         model=config.OPENAI_MODEL,
         messages=messages,
         temperature=0.1,
-        max_tokens=350,
+        max_tokens=500,
     )
     return response.choices[0].message.content.strip()
 
@@ -214,14 +200,11 @@ def demo_answer(question: str) -> tuple[str, list[dict[str, Any]]]:
 
 
 def answer_question(
-    question: str, top_k: int, session_id: str
+    question: str, top_k: int, history: list[dict[str, str]]
 ) -> tuple[str, list[dict[str, Any]]]:
     """Point d'entrée unique : renvoie (réponse, résultats de recherche)."""
     if config.DEMO_MODE:
-        answer, results = demo_answer(question)
-    else:
-        results = search_xeer(question, n_results=top_k)
-        history = get_history(session_id)
-        answer = generate_openai_answer(question, results, history)
-    save_to_history(session_id, question, answer)
+        return demo_answer(question)
+    results = search_xeer(question, n_results=max(top_k, 8))
+    answer = generate_openai_answer(question, results, history)
     return answer, results

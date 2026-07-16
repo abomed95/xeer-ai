@@ -9,8 +9,9 @@ utilisateurs, abonnements, paiements et tableau de bord administrateur.
 ### Produit
 - **Recherche sémantique** sur le corpus numérisé du Xeer Ciise (RAG)
 - **Réponses structurées** avec citations de pages vérifiables
-- **Mémoire de conversation** par session
-- **Multilingue** : somali, français, anglais
+- **Historique de conversations** persisté en base, synchronisé sur tous les appareils
+- **Feedback client** (👍/👎) sur chaque réponse, suivi dans l'admin
+- **Multilingue** : somali, arabe, français, anglais
 - **PWA installable** (web + mobile) et packaging **APK Android** (voir `docs/MOBILE_APK.md`)
 
 ### Abonnements

@@ -27,7 +27,7 @@ def list_plans():
                 "features": [
                     f"{config.PLANS['free']['quota']} questions par mois",
                     "Réponses avec citations de pages",
-                    "Somali · Français · English",
+                    "Somali · العربية · Français · English",
                 ],
             },
             {

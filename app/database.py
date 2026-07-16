@@ -40,6 +40,24 @@ CREATE TABLE IF NOT EXISTS payments (
     completed_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,                          -- UUID
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,                           -- user | assistant
+    content TEXT NOT NULL,
+    sources TEXT,                                 -- JSON des sources citées
+    feedback INTEGER,                             -- 1 = 👍, -1 = 👎, NULL = aucun
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS org_leads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -52,6 +70,8 @@ CREATE TABLE IF NOT EXISTS org_leads (
 
 CREATE INDEX IF NOT EXISTS idx_questions_user ON questions_log(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, id);
 """
 
 

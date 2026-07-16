@@ -36,7 +36,7 @@ class AuthResponse(BaseModel):
 class AskRequest(BaseModel):
     question: str
     top_k: int = 5
-    session_id: str | None = None
+    conversation_id: str | None = None
 
 
 class SourceItem(BaseModel):
@@ -50,11 +50,16 @@ class SourceItem(BaseModel):
 
 
 class AskResponse(BaseModel):
-    session_id: str
+    conversation_id: str
+    message_id: int                    # id du message assistant (pour le feedback)
     question: str
     answer: str
     sources: list[SourceItem]
     questions_remaining: int | None = None
+
+
+class FeedbackRequest(BaseModel):
+    rating: int                        # 1 = 👍, -1 = 👎
 
 
 # --- Facturation ---
