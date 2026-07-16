@@ -1,51 +1,90 @@
-# Xeer AI Premium
+# Xeer AI
 
-AI-powered legal-cultural assistant for exploring **Xeer Ciise**, the Somali customary law tradition.
+Assistant IA du **Xeer Ciise** (droit coutumier somali) — plateforme SaaS
+complète : application web moderne (PWA installable + APK Android), comptes
+utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
-## Overview
+## Fonctionnalités
 
-Xeer AI Premium is a multilingual AI assistant designed to preserve, explore, and explain Somali customary law through:
+### Produit
+- **Recherche sémantique** sur le corpus numérisé du Xeer Ciise (RAG)
+- **Réponses structurées** avec citations de pages vérifiables
+- **Historique de conversations** persisté en base, synchronisé sur tous les appareils
+- **Feedback client** (👍/👎) sur chaque réponse, suivi dans l'admin
+- **Multilingue** : somali, arabe, français, anglais
+- **PWA installable** (web + mobile) et packaging **APK Android** (voir `docs/MOBILE_APK.md`)
 
-- semantic search
-- verified source retrieval
-- conversation memory
-- OpenAI-powered structured answers
-- premium web interface
+### Abonnements
+| Plan | Prix | Quota |
+|------|------|-------|
+| **Gratuit** | 0 $ | 3 questions / mois |
+| **Premium** | **10 $ / mois** | Illimité |
+| **Organisation** | Prix négociable (sur devis) | Personnalisé / illimité |
 
-The system is built on a digitized Xeer Ciise corpus and combines RAG, memory, and a modern chat experience.
+### Paiements
+- **Waafi** (mobile money — Djibouti, Somalie, diaspora)
+- **CAC Bank** (CAC Pay)
+- **Visa** et **MasterCard** (passerelle carte bancaire)
 
-## Main Features
+Mode `sandbox` par défaut (paiements simulés de bout en bout) ; passez
+`XEER_PAYMENTS_MODE=live` avec vos identifiants marchands pour la production.
 
-- **Semantic search on Xeer corpus**
-- **Structured answers with page citations**
-- **Conversation memory by session**
-- **Somali / French / English support**
-- **FastAPI backend**
-- **Streamlit premium frontend**
-- **Landing page for presentation/demo**
+### Administration (`/admin.html`)
+- KPIs : utilisateurs, abonnés Premium, MRR, questions, revenus
+- Graphiques 30 jours (questions posées, revenus encaissés)
+- Gestion des utilisateurs et de leurs plans (dont quotas négociés)
+- Suivi des paiements et des demandes de devis Organisation
 
-## Tech Stack
+## Démarrage rapide
 
-- Python
-- FastAPI
-- Streamlit
-- ChromaDB
-- Sentence Transformers
-- OpenAI API
-- OCR pipeline with PyMuPDF + Tesseract
+```bash
+pip install -r requirements.txt
+cp .env.example .env          # renseignez OPENAI_API_KEY, XEER_SECRET_KEY…
 
-## Project Structure
+# 1. Construire l'index vectoriel (une fois)
+python scripts/build_vector_store.py
+
+# 2. Lancer le serveur (API + frontend)
+uvicorn app.main:app --reload
+```
+
+- Application : http://localhost:8000
+- Chat : http://localhost:8000/app.html
+- Admin : http://localhost:8000/admin.html (identifiants affichés au premier démarrage,
+  ou définis via `XEER_ADMIN_EMAIL` / `XEER_ADMIN_PASSWORD`)
+- Docs API : http://localhost:8000/docs
+
+> **Mode démo** : `XEER_DEMO_MODE=1` permet de tester toute la plateforme
+> (comptes, quotas, paiements sandbox, admin) sans clé OpenAI ni index vectoriel.
+
+## Architecture
 
 ```bash
 xeer-ai/
-├── app/                      # FastAPI backend
-│   ├── __init__.py
-│   └── main.py
-├── frontend/                 # Frontend files
-│   ├── streamlit_app.py
-│   └── landing.html
-├── scripts/                  # OCR, cleaning, translation, vector build
-├── data/                     # Raw and processed data
-├── requirements.txt
-├── .gitignore
-└── README.md
+├── app/                      # Backend FastAPI
+│   ├── main.py               # App, admin seed, statiques
+│   ├── config.py             # Configuration (env)
+│   ├── database.py           # SQLite (users, paiements, usage, leads)
+│   ├── security.py           # PBKDF2 + jetons signés
+│   ├── deps.py               # Auth / rôle admin
+│   ├── routers/              # auth, chat, billing, admin
+│   └── services/
+│       ├── rag.py             # Moteur RAG (Chroma + OpenAI)
+│       ├── accounts.py        # Plans, quotas, usage
+│       └── payments/          # waafi, cacbank, card (Visa/MasterCard)
+├── frontend/                 # Web (PWA)
+│   ├── index.html             # Landing + tarifs + devis organisations
+│   ├── app.html               # Chat (auth, quota, paiement intégré)
+│   ├── admin.html             # Tableau de bord administrateur
+│   ├── manifest.webmanifest   # PWA / APK
+│   ├── sw.js                  # Service worker
+│   └── assets/                # CSS, JS, icônes
+├── scripts/                  # OCR, nettoyage, traduction, index vectoriel
+├── data/                     # Corpus brut et nettoyé
+└── docs/MOBILE_APK.md        # Générer l'APK Android
+```
+
+## Tech stack
+
+Python · FastAPI · SQLite · ChromaDB · Sentence Transformers · OpenAI API ·
+PWA (vanilla JS) · OCR PyMuPDF + Tesseract
