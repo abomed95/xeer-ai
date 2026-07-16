@@ -3,7 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db, utcnow
 from app.deps import get_current_user
-from app.schemas import AuthResponse, LoginRequest, RegisterRequest, UserOut
+from app.schemas import (
+    AuthResponse,
+    ChangePasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    UpdateProfileRequest,
+    UserOut,
+)
 from app.security import create_token, hash_password, verify_password
 from app.services.accounts import get_user_by_email, user_out
 
@@ -39,3 +46,26 @@ def login(payload: LoginRequest):
 @router.get("/me", response_model=UserOut)
 def me(user: dict = Depends(get_current_user)):
     return UserOut(**user_out(user))
+
+
+@router.put("/profile", response_model=UserOut)
+def update_profile(payload: UpdateProfileRequest, user: dict = Depends(get_current_user)):
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET full_name = ? WHERE id = ?",
+            (payload.full_name.strip(), user["id"]),
+        )
+        fresh = dict(db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone())
+    return UserOut(**user_out(fresh))
+
+
+@router.put("/password")
+def change_password(payload: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    if not verify_password(payload.current_password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect.")
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (hash_password(payload.new_password), user["id"]),
+        )
+    return {"message": "Mot de passe modifié avec succès."}

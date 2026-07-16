@@ -7,7 +7,7 @@ load_dotenv()
 
 # --- Général ---
 APP_NAME = "Xeer AI"
-APP_VERSION = "4.1.0"
+APP_VERSION = "4.2.0"
 SECRET_KEY = os.getenv("XEER_SECRET_KEY", "change-me-in-production")
 TOKEN_TTL_HOURS = int(os.getenv("XEER_TOKEN_TTL_HOURS", "72"))
 DATABASE_PATH = os.getenv("XEER_DATABASE_PATH", "xeer.db")

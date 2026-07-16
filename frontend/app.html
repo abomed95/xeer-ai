@@ -140,12 +140,23 @@
       <div class="nav-links" id="nav-user" style="display:none;">
         <span class="chip gold" id="plan-chip">…</span>
         <button class="btn btn-primary btn-sm" id="btn-upgrade" style="display:none;">✦ Premium</button>
+        <button class="btn btn-ghost btn-sm" id="btn-export" style="display:none;" title="Exporter la conversation en PDF">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          PDF
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btn-profile" title="Mon profil">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
         <a class="link" href="/admin.html" id="link-admin" style="display:none;">Admin</a>
         <button class="btn btn-ghost btn-sm" id="btn-logout" title="Déconnexion">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         </button>
       </div>
     </nav>
+
+    <div style="width:min(860px,100%); margin:0 auto; padding:0 16px;">
+      <div class="alert" id="expiry-banner"></div>
+    </div>
 
     <main class="chat-scroll" id="chat"></main>
 
@@ -232,6 +243,52 @@
     </div>
   </div>
 
+  <!-- ===== Modale Profil ===== -->
+  <div class="modal-backdrop" id="profile-modal">
+    <div class="modal" style="width:min(540px,100%);">
+      <h2>Mon <span class="gold-text">profil</span></h2>
+      <p class="sub" id="pr-email"></p>
+
+      <div class="field">
+        <label>Nom complet</label>
+        <div style="display:flex; gap:8px;">
+          <input class="input" id="pr-name" placeholder="Votre nom" />
+          <button class="btn btn-secondary btn-sm" id="pr-save-name" style="flex-shrink:0;">Enregistrer</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px; margin:16px 0; box-shadow:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:800;" id="pr-plan">…</div>
+            <div class="muted" style="font-size:0.82rem;" id="pr-plan-detail"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="pr-renew" style="display:none;">Renouveler</button>
+        </div>
+      </div>
+
+      <details style="margin:14px 0;">
+        <summary style="cursor:pointer; font-weight:700; color:var(--gold2); font-size:0.9rem;">🔒 Changer mon mot de passe</summary>
+        <div style="margin-top:12px;">
+          <div class="field"><label>Mot de passe actuel</label><input class="input" id="pr-pass-old" type="password" /></div>
+          <div class="field"><label>Nouveau mot de passe (8 caractères min.)</label><input class="input" id="pr-pass-new" type="password" /></div>
+          <button class="btn btn-secondary btn-block btn-sm" id="pr-save-pass">Mettre à jour le mot de passe</button>
+        </div>
+      </details>
+
+      <details style="margin:14px 0;">
+        <summary style="cursor:pointer; font-weight:700; color:var(--gold2); font-size:0.9rem;">💳 Historique de mes paiements</summary>
+        <div class="table-wrap" style="margin-top:12px;">
+          <table class="data"><thead><tr><th>Date</th><th>Moyen</th><th>Montant</th><th>Statut</th></tr></thead>
+          <tbody id="pr-payments"></tbody></table>
+        </div>
+      </details>
+
+      <div class="alert" id="pr-alert"></div>
+      <button class="btn btn-ghost btn-block" id="pr-close" style="margin-top:6px;">Fermer</button>
+    </div>
+  </div>
+
   <script src="/assets/api.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -269,6 +326,27 @@
         : "Questions illimitées · Merci de votre confiance ✦";
       const note = $("note-upgrade");
       if (note) note.addEventListener("click", (e) => { e.preventDefault(); openPayModal(); });
+      renderExpiryBanner(user);
+    }
+
+    /* ---------- Alerte d'expiration d'abonnement ---------- */
+    function daysUntil(iso) {
+      if (!iso) return null;
+      return Math.ceil((new Date(iso) - Date.now()) / 86400000);
+    }
+    function renderExpiryBanner(user) {
+      const banner = $("expiry-banner");
+      banner.className = "alert";
+      banner.innerHTML = "";
+      if (user.plan === "free" || !user.plan_expires_at) return;
+      const days = daysUntil(user.plan_expires_at);
+      if (days === null || days > 5) return;
+      const label = days <= 0
+        ? "Votre abonnement a expiré."
+        : `Votre abonnement expire dans ${days} jour(s).`;
+      banner.innerHTML = `⏳ ${label} <a href="#" id="banner-renew" style="color:var(--gold2); font-weight:700;">Renouveler maintenant (10 $/mois)</a>`;
+      banner.className = "alert info show";
+      $("banner-renew").addEventListener("click", (e) => { e.preventDefault(); openPayModal(); });
     }
 
     async function bootstrap() {
@@ -297,6 +375,7 @@
       clearChat();
       showWelcome();
       highlightActiveConv();
+      updateExportBtn();
       if (window.innerWidth <= 760) $("sidebar").classList.add("hidden");
     });
 
@@ -342,6 +421,7 @@
         }
       }
       highlightActiveConv();
+      updateExportBtn();
       if (window.innerWidth <= 760) $("sidebar").classList.add("hidden");
       $("chat").scrollTop = $("chat").scrollHeight;
     }
@@ -506,6 +586,7 @@
         });
         const isNewConv = !conversationId;
         conversationId = data.conversation_id;
+        updateExportBtn();
         typing.classList.remove("typing");
         typing.querySelector(".content").textContent = data.answer;
         decorateBotMessage(typing, data.message_id, data.sources, null);
@@ -531,6 +612,110 @@
     $("btn-send").addEventListener("click", sendQuestion);
     $("question").addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendQuestion(); }
+    });
+
+    /* ---------- Export PDF ---------- */
+    function updateExportBtn() {
+      $("btn-export").style.display = conversationId ? "" : "none";
+    }
+
+    $("btn-export").addEventListener("click", () => {
+      const msgs = [...document.querySelectorAll("#chat .msg")];
+      if (!msgs.length) return;
+      const rows = msgs.map(m => {
+        const who = m.classList.contains("user") ? "q" : "a";
+        const text = escapeHtml(m.querySelector(".content").textContent);
+        return `<div class="m ${who}" dir="auto">${text}</div>`;
+      }).join("");
+      const win = window.open("", "_blank");
+      if (!win) return;
+      win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+        <title>Xeer AI — Conversation</title>
+        <style>
+          body { font-family: Georgia, "Times New Roman", serif; color: #111; margin: 40px auto; max-width: 720px; line-height: 1.6; }
+          header { border-bottom: 3px double #b8941f; padding-bottom: 12px; margin-bottom: 24px; }
+          h1 { font-size: 1.3rem; margin: 0; } h1 span { color: #8a6d13; }
+          .date { color: #666; font-size: 0.85rem; }
+          .m { margin: 14px 0; padding: 12px 16px; border-radius: 10px; white-space: pre-wrap; unicode-bidi: plaintext; }
+          .m.q { background: #eef2f8; border: 1px solid #d5deeb; font-weight: 600; }
+          .m.a { background: #fdf9ee; border: 1px solid #ecdfb8; }
+          footer { margin-top: 28px; border-top: 1px solid #ddd; padding-top: 10px; color: #777; font-size: 0.8rem; }
+          @media print { body { margin: 10mm; } }
+        </style></head><body>
+        <header><h1>⚖️ Xeer <span>AI</span> — Conversation</h1>
+        <div class="date">Exportée le ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div></header>
+        ${rows}
+        <footer>Xeer AI — Assistant du Xeer Ciise (droit coutumier somali) · Les réponses citent le corpus numérisé.</footer>
+        <${"script"}>window.onload = () => setTimeout(() => window.print(), 300);</${"script"}>
+        </body></html>`);
+      win.document.close();
+    });
+
+    /* ---------- Profil ---------- */
+    const fmtDateFr = (iso) => iso ? new Date(iso).toLocaleDateString("fr-FR") : "—";
+
+    async function openProfile() {
+      const user = XeerAPI.getUser() || await XeerAPI.refreshUser();
+      $("pr-email").textContent = user.email;
+      $("pr-name").value = user.full_name || "";
+      const planNames = { free: "Plan Gratuit", premium: "Plan Premium ✦", organization: `Plan Organisation 🏛${user.org_name ? " — " + user.org_name : ""}` };
+      $("pr-plan").textContent = planNames[user.plan] || user.plan;
+      $("pr-plan-detail").textContent = user.plan === "free"
+        ? `${user.questions_remaining}/${user.quota} questions restantes ce mois-ci`
+        : user.plan_expires_at
+          ? `Actif jusqu'au ${fmtDateFr(user.plan_expires_at)}${user.quota ? ` · ${user.questions_remaining}/${user.quota} questions restantes` : " · questions illimitées"}`
+          : "Actif · questions illimitées";
+      $("pr-renew").style.display = user.plan === "organization" ? "none" : "";
+      $("pr-renew").textContent = user.plan === "free" ? "Passer à Premium" : "Renouveler";
+      $("pr-alert").className = "alert";
+      $("profile-modal").classList.add("open");
+      try {
+        const data = await XeerAPI.request("/api/billing/history");
+        $("pr-payments").innerHTML = data.payments.length
+          ? data.payments.map(p => `<tr><td>${fmtDateFr(p.created_at)}</td><td>${escapeHtml(p.method || p.provider)}</td><td>${p.amount_usd.toFixed(2)} $</td><td>${p.status === "completed" ? "✅ réussi" : p.status === "failed" ? "❌ échoué" : "⏳ en attente"}</td></tr>`).join("")
+          : '<tr><td colspan="4" class="muted">Aucun paiement.</td></tr>';
+      } catch { /* non bloquant */ }
+    }
+    $("btn-profile").addEventListener("click", openProfile);
+    $("pr-close").addEventListener("click", () => $("profile-modal").classList.remove("open"));
+    $("pr-renew").addEventListener("click", () => {
+      $("profile-modal").classList.remove("open");
+      openPayModal();
+    });
+
+    $("pr-save-name").addEventListener("click", async () => {
+      const alertBox = $("pr-alert");
+      alertBox.className = "alert";
+      try {
+        const user = await XeerAPI.request("/api/auth/profile", {
+          method: "PUT", body: { full_name: $("pr-name").value.trim() },
+        });
+        XeerAPI.setUser(user);
+        renderUser(user);
+        alertBox.textContent = "Nom mis à jour ✓";
+        alertBox.className = "alert success show";
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      }
+    });
+
+    $("pr-save-pass").addEventListener("click", async () => {
+      const alertBox = $("pr-alert");
+      alertBox.className = "alert";
+      try {
+        const data = await XeerAPI.request("/api/auth/password", {
+          method: "PUT",
+          body: { current_password: $("pr-pass-old").value, new_password: $("pr-pass-new").value },
+        });
+        $("pr-pass-old").value = "";
+        $("pr-pass-new").value = "";
+        alertBox.textContent = data.message;
+        alertBox.className = "alert success show";
+      } catch (err) {
+        alertBox.textContent = err.message;
+        alertBox.className = "alert error show";
+      }
     });
 
     /* ---------- Paiement ---------- */
