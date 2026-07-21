@@ -16,6 +16,12 @@ Colle l'URL de ce dépôt sur https://render.com/deploy — la configuration
 [`render.yaml`](render.yaml) lance toute la plateforme (comptes, quotas,
 paiements sandbox, admin) sans clé ni index vectoriel.
 
+## Aperçu
+
+| Landing | Chat (réponse citée) | Admin |
+|---|---|---|
+| ![Landing](docs/screenshots/01-landing.png) | ![Chat](docs/screenshots/02-chat.png) | ![Admin](docs/screenshots/03-admin.png) |
+
 ## Fonctionnalités
 
 ### Produit
