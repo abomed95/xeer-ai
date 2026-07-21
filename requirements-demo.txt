@@ -1,0 +1,8 @@
+# Dépendances minimales pour le MODE DÉMO (XEER_DEMO_MODE=1).
+# Les dépendances lourdes (chromadb, sentence-transformers, openai) sont
+# importées paresseusement et ne sont PAS nécessaires en démo — build rapide,
+# tient dans une petite instance (512 Mo).
+fastapi
+uvicorn
+python-dotenv
+email-validator

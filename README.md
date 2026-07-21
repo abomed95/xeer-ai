@@ -10,11 +10,17 @@ utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
 Déploiement « un clic » en **mode démo** (aucune clé OpenAI requise) :
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+**DigitalOcean App Platform** — [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/claude/session-bi7xax)
+(spec : [`.do/app.yaml`](.do/app.yaml)). DigitalOcean lit le spec, construit
+l'app et te fournit l'URL publique.
 
-Colle l'URL de ce dépôt sur https://render.com/deploy — la configuration
-[`render.yaml`](render.yaml) lance toute la plateforme (comptes, quotas,
-paiements sandbox, admin) sans clé ni index vectoriel.
+**Render** — [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+(spec : [`render.yaml`](render.yaml)). Colle l'URL du dépôt sur
+https://render.com/deploy.
+
+Les deux lancent toute la plateforme (comptes, quotas, paiements sandbox, admin)
+sans clé ni index vectoriel, via le build léger
+[`requirements-demo.txt`](requirements-demo.txt).
 
 ## Aperçu
 
