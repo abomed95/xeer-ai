@@ -19,6 +19,27 @@ def get_user_by_email(email: str) -> dict | None:
     return dict(row) if row else None
 
 
+def ensure_demo_user(user_id: int) -> dict:
+    """Re-matérialise un utilisateur de démonstration dans la base locale.
+
+    En mode démo, la base SQLite peut ne pas persister d'une requête à l'autre
+    (plusieurs instances derrière un load-balancer, système de fichiers
+    éphémère du PaaS…). Lorsqu'un jeton signé valide pointe vers un utilisateur
+    absent de la base de l'instance courante, on recrée une ligne minimale avec
+    le même identifiant : le parcours reste fonctionnel et les contraintes de
+    clé étrangère (conversations, questions_log…) sont satisfaites.
+    """
+    with get_db() as db:
+        db.execute(
+            "INSERT OR IGNORE INTO users "
+            "(id, email, password_hash, full_name, role, plan, created_at) "
+            "VALUES (?, ?, '', ?, 'user', 'free', ?)",
+            (user_id, f"demo-{user_id}@xeer.ai", "Utilisateur démo", utcnow()),
+        )
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return dict(row)
+
+
 def effective_plan(user: dict) -> str:
     """Plan réel de l'utilisateur : retombe sur 'free' si l'abonnement a expiré."""
     plan = user["plan"]

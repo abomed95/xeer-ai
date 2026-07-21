@@ -47,13 +47,15 @@ def seed_admin():
         ).fetchone()
         if existing:
             return
-        password = config.ADMIN_PASSWORD or secrets.token_urlsafe(12)
+        password = config.ADMIN_PASSWORD or (
+            config.DEMO_ADMIN_PASSWORD if config.DEMO_MODE else secrets.token_urlsafe(12)
+        )
         db.execute(
             "INSERT INTO users (email, password_hash, full_name, role, plan, created_at) "
             "VALUES (?, ?, ?, 'admin', 'premium', ?)",
             (config.ADMIN_EMAIL, hash_password(password), "Administrateur", utcnow()),
         )
-    if not config.ADMIN_PASSWORD:
+    if not config.ADMIN_PASSWORD and not config.DEMO_MODE:
         print(f"[Xeer AI] Compte admin créé : {config.ADMIN_EMAIL} / {password}")
         print("[Xeer AI] Définissez XEER_ADMIN_PASSWORD pour un mot de passe stable.")
 

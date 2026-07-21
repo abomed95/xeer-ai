@@ -13,8 +13,13 @@ TOKEN_TTL_HOURS = int(os.getenv("XEER_TOKEN_TTL_HOURS", "72"))
 DATABASE_PATH = os.getenv("XEER_DATABASE_PATH", "xeer.db")
 
 # Mode démo : /ask répond sans RAG ni OpenAI (utile pour tester l'app
-# complète sans clé API ni index vectoriel).
-DEMO_MODE = os.getenv("XEER_DEMO_MODE", "0") == "1"
+# complète sans clé API ni index vectoriel). Auto-activé quand aucune clé
+# OpenAI n'est configurée, pour qu'un déploiement de démonstration fonctionne
+# toujours (chat simulé, aucune dépendance lourde requise).
+DEMO_MODE = (
+    os.getenv("XEER_DEMO_MODE", "0") == "1"
+    or not os.getenv("OPENAI_API_KEY", "").strip()
+)
 
 # --- RAG / LLM ---
 DB_DIR = os.getenv("XEER_CHROMA_DIR", "chroma_db")
@@ -26,6 +31,9 @@ MAX_HISTORY_MESSAGES = 6  # 3 échanges user/assistant
 # --- Compte administrateur initial ---
 ADMIN_EMAIL = os.getenv("XEER_ADMIN_EMAIL", "admin@xeer.ai")
 ADMIN_PASSWORD = os.getenv("XEER_ADMIN_PASSWORD", "")
+# Mot de passe admin par défaut en mode démo (si XEER_ADMIN_PASSWORD non défini) :
+# garantit une connexion admin stable et identique sur toutes les instances.
+DEMO_ADMIN_PASSWORD = "xeer-demo-2026"
 
 # --- Abonnements ---
 # quota = nombre de questions par mois (None = illimité)
