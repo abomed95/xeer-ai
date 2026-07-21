@@ -1,8 +1,20 @@
 # Xeer AI
 
+![Xeer AI](docs/xeer-ai-cover.png)
+
 Assistant IA du **Xeer Ciise** (droit coutumier somali) — plateforme SaaS
 complète : application web moderne (PWA installable + APK Android), comptes
 utilisateurs, abonnements, paiements et tableau de bord administrateur.
+
+## Démo en ligne
+
+Déploiement « un clic » en **mode démo** (aucune clé OpenAI requise) :
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+Colle l'URL de ce dépôt sur https://render.com/deploy — la configuration
+[`render.yaml`](render.yaml) lance toute la plateforme (comptes, quotas,
+paiements sandbox, admin) sans clé ni index vectoriel.
 
 ## Fonctionnalités
 

@@ -1,0 +1,30 @@
+# Déploiement démo « un clic » de Xeer AI sur Render.
+# https://render.com/deploy  →  colle l'URL de ce dépôt GitHub.
+#
+# Cette configuration lance la plateforme complète en MODE DÉMO :
+# comptes, quotas, paiements sandbox et admin fonctionnent sans clé
+# OpenAI ni index vectoriel — parfait pour une démo Devpost.
+services:
+  - type: web
+    name: xeer-ai-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Réponses simulées : aucune clé OpenAI requise.
+      - key: XEER_DEMO_MODE
+        value: "1"
+      # Paiements simulés de bout en bout.
+      - key: XEER_PAYMENTS_MODE
+        value: sandbox
+      # Clé secrète générée automatiquement par Render.
+      - key: XEER_SECRET_KEY
+        generateValue: true
+      # Identifiants admin de démo (change-les si tu veux).
+      - key: XEER_ADMIN_EMAIL
+        value: admin@xeer.ai
+      - key: XEER_ADMIN_PASSWORD
+        value: xeer-demo-2026
+      - key: PYTHON_VERSION
+        value: "3.12"
