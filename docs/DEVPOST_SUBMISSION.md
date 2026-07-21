@@ -65,8 +65,10 @@ Xeer AI is a full SaaS platform built around an AI assistant:
 - **Digitization pipeline**: OCR of the book (PyMuPDF + Tesseract), cleaning,
   translation.
 - **RAG engine**: corpus chunking, embeddings, indexing in **ChromaDB**, then
-  answer generation through the **OpenAI API** with the retrieved passages as
-  context and a strict instruction to cite pages.
+  answer generation through the **OpenAI API (GPT-5.5)** with the retrieved
+  passages as context and a strict instruction to cite pages.
+- **Built with Codex**: OpenAI's Codex coding agent was used to scaffold and
+  iterate on the backend, RAG pipeline and frontend.
 - **Backend**: FastAPI (PBKDF2 auth + signed tokens, quotas, billing, admin),
   SQLite.
 - **Frontend**: vanilla-JS PWA (landing, chat, admin), service worker,

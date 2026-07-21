@@ -20,7 +20,7 @@ DEMO_MODE = os.getenv("XEER_DEMO_MODE", "0") == "1"
 DB_DIR = os.getenv("XEER_CHROMA_DIR", "chroma_db")
 COLLECTION_NAME = "xeer_chunks"
 EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 MAX_HISTORY_MESSAGES = 6  # 3 échanges user/assistant
 
 # --- Compte administrateur initial ---
