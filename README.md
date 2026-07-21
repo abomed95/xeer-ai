@@ -22,15 +22,14 @@ Les deux lancent toute la plateforme (comptes, quotas, paiements sandbox, admin)
 sans clé ni index vectoriel, via le build léger
 [`requirements-demo.txt`](requirements-demo.txt).
 
-## Utilisation de Codex & GPT-5.5 (OpenAI Build Week)
+## Utilisation de Codex & GPT-5.6 (OpenAI Build Week)
 
-<!-- NOTE ÉQUIPE : adaptez le paragraphe « Codex » à ce que vous avez réellement
-     fait. Vérifiez aussi la version exacte du modèle utilisé (5.5 / 5.6). -->
+<!-- NOTE ÉQUIPE : adaptez le paragraphe « Codex » à ce que vous avez réellement fait. -->
 
-**GPT-5.5 — le cœur du produit.** Le moteur de réponses de Xeer AI s'appuie sur
-**GPT-5.5** via l'API OpenAI (`OPENAI_MODEL=gpt-5.5`). Dans le pipeline RAG, les
+**GPT-5.6 — le cœur du produit.** Le moteur de réponses de Xeer AI s'appuie sur
+**GPT-5.6** via l'API OpenAI (`OPENAI_MODEL=gpt-5.6`). Dans le pipeline RAG, les
 passages les plus pertinents du corpus numérisé du Xeer Ciise sont récupérés
-(ChromaDB) puis fournis à GPT-5.5 avec une consigne stricte : s'appuyer
+(ChromaDB) puis fournis à GPT-5.6 avec une consigne stricte : s'appuyer
 uniquement sur ces extraits et citer les pages sources. D'où des réponses
 multilingues (somali, arabe, français, anglais), structurées et **vérifiables**.
 Voir [`app/services/rag.py`](app/services/rag.py).
@@ -128,4 +127,4 @@ xeer-ai/
 ## Tech stack
 
 Python · FastAPI · SQLite · ChromaDB · Sentence Transformers ·
-OpenAI API (**GPT-5.5**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract
+OpenAI API (**GPT-5.6**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract
