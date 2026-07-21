@@ -10,7 +10,7 @@ utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
 Déploiement « un clic » en **mode démo** (aucune clé OpenAI requise) :
 
-**DigitalOcean App Platform** — [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/claude/session-bi7xax)
+**DigitalOcean App Platform** — [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
 (spec : [`.do/app.yaml`](.do/app.yaml)). DigitalOcean lit le spec, construit
 l'app et te fournit l'URL publique.
 

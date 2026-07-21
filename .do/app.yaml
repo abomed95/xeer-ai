@@ -1,8 +1,7 @@
 # Spec DigitalOcean App Platform — déploiement démo de Xeer AI.
 #
 # Déploiement en 1 clic :
-#   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/claude/session-bi7xax
-# (après fusion dans la branche par défaut, remplace la branche par « main ».)
+#   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main
 #
 # Lance la plateforme complète en MODE DÉMO : comptes, quotas, paiements
 # sandbox et admin, sans clé OpenAI ni index vectoriel. Build léger via
@@ -13,7 +12,7 @@ services:
   - name: web
     github:
       repo: abomed95/xeer-ai
-      branch: claude/session-bi7xax
+      branch: main
       deploy_on_push: true
     environment_slug: python
     build_command: pip install -r requirements-demo.txt
