@@ -278,3 +278,65 @@ class TestIsolationDesDonnees:
         # La conversation du propriétaire est intacte.
         assert client.get(f"/api/chat/conversations/{conversation}",
                           headers=user_token).status_code == 200
+
+
+class TestMotDePasseAdministrateur:
+    """Le mot de passe de démonstration est public : jamais en production."""
+
+    def _base_vierge(self):
+        from app.database import get_db, init_db
+        init_db()
+        with get_db() as db:
+            for table in ("messages", "conversations", "questions_log",
+                          "payments", "org_leads", "users"):
+                db.execute(f"DELETE FROM {table}")
+
+    def test_repli_demo_n_utilise_pas_le_mot_de_passe_public(self, client, monkeypatch):
+        """Sans clé OpenAI, l'app retombe en démo mais reste protégée."""
+        from app import main
+        from app.security import verify_password
+        from app.services.accounts import get_user_by_email
+
+        # Production sans clé OpenAI : DEMO_MODE actif par repli, mais pas voulu.
+        monkeypatch.setattr(config, "DEMO_MODE", True)
+        monkeypatch.setattr(config, "DEMO_MODE_EXPLICIT", False)
+        monkeypatch.setattr(config, "ADMIN_PASSWORD", "")
+        self._base_vierge()
+
+        main.seed_admin()
+
+        admin = get_user_by_email(config.ADMIN_EMAIL)
+        assert admin is not None
+        assert not verify_password(config.DEMO_ADMIN_PASSWORD, admin["password_hash"]), (
+            "le mot de passe de démonstration, public, ne doit jamais être semé "
+            "dans une base de production"
+        )
+
+    def test_demo_explicite_utilise_le_mot_de_passe_de_demo(self, client, monkeypatch):
+        """Un déploiement de démonstration garde des identifiants stables."""
+        from app import main
+        from app.security import verify_password
+        from app.services.accounts import get_user_by_email
+
+        monkeypatch.setattr(config, "DEMO_MODE", True)
+        monkeypatch.setattr(config, "DEMO_MODE_EXPLICIT", True)
+        monkeypatch.setattr(config, "ADMIN_PASSWORD", "")
+        self._base_vierge()
+
+        main.seed_admin()
+
+        admin = get_user_by_email(config.ADMIN_EMAIL)
+        assert verify_password(config.DEMO_ADMIN_PASSWORD, admin["password_hash"])
+
+    def test_mot_de_passe_genere_est_affiche(self, client, monkeypatch, capsys):
+        """Un mot de passe généré non affiché rendrait l'admin inaccessible."""
+        from app import main
+
+        monkeypatch.setattr(config, "DEMO_MODE", True)
+        monkeypatch.setattr(config, "DEMO_MODE_EXPLICIT", False)
+        monkeypatch.setattr(config, "ADMIN_PASSWORD", "")
+        self._base_vierge()
+
+        main.seed_admin()
+
+        assert "Compte admin créé" in capsys.readouterr().out

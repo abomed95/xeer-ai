@@ -11,6 +11,20 @@ IA réelle (OpenAI), corpus indexé, et **données persistantes**.
 
 ---
 
+## App déployée
+
+| | |
+|---|---|
+| Nom de l'app | `seal-app` |
+| Composant | `xeer-ai` |
+| Région | `fra` (Francfort) |
+| URL | https://seal-app-53y5l.ondigitalocean.app |
+| Base de données | PostgreSQL 16 managée, composant `db` |
+
+`.do/app.yaml` reflète cette configuration. **Ne renomme ni l'app ni le
+composant** : DigitalOcean créerait une nouvelle app, ou détruirait et
+recréerait le service.
+
 ## Méthode A — en ligne de commande (recommandée)
 
 Nécessite [`doctl`](https://docs.digitalocean.com/reference/doctl/how-to/install/)

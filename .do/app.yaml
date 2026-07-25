@@ -32,7 +32,7 @@
 # Vérification après déploiement — GET /api/health doit renvoyer :
 #   demo_mode: false · openai_key_set: true · rag_ready: true
 #   database: "postgresql" · persistent_storage: true
-name: xeer-ai   # ⚠️ renommer ce champ sur une app existante en crée une nouvelle
+name: seal-app   # nom de l'app déployée — le changer en créerait une nouvelle
 region: fra   # Francfort (proche Djibouti/Europe) — change si besoin
 
 databases:
@@ -45,7 +45,9 @@ databases:
     production: false
 
 services:
-  - name: web
+  # Nom du composant tel que déployé : le renommer détruirait et recréerait
+  # le service (perte de configuration).
+  - name: xeer-ai
     github:
       repo: abomed95/xeer-ai
       branch: main
@@ -59,9 +61,11 @@ services:
       pip install -r requirements.txt
       python scripts/build_vector_store.py
     run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    # Le RAG charge un modèle d'embeddings multilingue en mémoire : 512 Mo
-    # (basic-xxs) ne suffisent pas — basic-s (2 Go) est le palier confortable.
-    instance_size_slug: basic-s
+    # Le RAG charge un modèle d'embeddings multilingue en mémoire : 1 Go ne
+    # suffit pas. 2 Go (~25 $/mois) est le palier confortable.
+    instance_size_slug: apps-s-1vcpu-2gb
+    # 1 seule instance : les compteurs de limitation de débit sont en mémoire,
+    # donc exacts uniquement avec une instance unique (voir app/ratelimit.py).
     instance_count: 1
     http_port: 8080
     health_check:

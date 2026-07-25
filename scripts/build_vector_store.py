@@ -1,5 +1,18 @@
-from pathlib import Path 
+from pathlib import Path
+import os
 import re
+
+# Le modèle d'embeddings doit être mis en cache DANS le dossier de
+# l'application, avant tout import de sentence-transformers : ainsi le
+# téléchargement effectué à cette étape (build) est embarqué dans l'image et la
+# production n'a plus besoin de contacter HuggingFace. Doit rester cohérent avec
+# app/config.py.
+_MODEL_CACHE = os.getenv(
+    "XEER_MODEL_CACHE", str(Path(__file__).resolve().parent.parent / ".model_cache")
+)
+os.environ.setdefault("HF_HOME", _MODEL_CACHE)
+os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", _MODEL_CACHE)
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
