@@ -392,24 +392,6 @@ table.data th {
   flex-wrap: wrap;
 }
 
-/* Bandeau légal discret de l'espace client. */
-.app-legal {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 18px;
-  margin-top: 30px;
-  padding: 18px 0 calc(24px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line2);
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.app-legal a { color: var(--muted); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
-.app-legal a:hover { color: var(--gold2); }
-.app-legal-credit { margin-left: auto; }
-.app-legal-credit strong { color: var(--gold2); }
-@media (max-width: 560px) { .app-legal-credit { margin-left: 0; } }
-
 /* ============================================================
    Pages légales — mise en page de lecture longue
    ============================================================ */
