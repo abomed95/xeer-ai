@@ -22,17 +22,21 @@ Les deux lancent toute la plateforme (comptes, quotas, paiements sandbox, admin)
 sans clé ni index vectoriel, via le build léger
 [`requirements-demo.txt`](requirements-demo.txt).
 
-## Utilisation de Codex & GPT-5.6 (OpenAI Build Week)
+## Utilisation de Codex & GPT-4o (OpenAI Build Week)
 
 <!-- NOTE ÉQUIPE : adaptez le paragraphe « Codex » à ce que vous avez réellement fait. -->
 
-**GPT-5.6 — le cœur du produit.** Le moteur de réponses de Xeer AI s'appuie sur
-**GPT-5.6** via l'API OpenAI (`OPENAI_MODEL=gpt-5.6`). Dans le pipeline RAG, les
-passages les plus pertinents du corpus numérisé du Xeer Ciise sont récupérés
-(ChromaDB) puis fournis à GPT-5.6 avec une consigne stricte : s'appuyer
+**Le modèle OpenAI — le cœur du produit.** Le moteur de réponses de Xeer AI
+s'appuie sur l'API OpenAI. Utilisez un **modèle réel** via `OPENAI_MODEL`
+(défaut : `gpt-4o-mini` ; `gpt-4o` pour une qualité supérieure). Dans le pipeline
+RAG, les passages les plus pertinents du corpus numérisé du Xeer Ciise sont
+récupérés (ChromaDB) puis fournis au modèle avec une consigne stricte : s'appuyer
 uniquement sur ces extraits et citer les pages sources. D'où des réponses
 multilingues (somali, arabe, français, anglais), structurées et **vérifiables**.
 Voir [`app/services/rag.py`](app/services/rag.py).
+
+> ⚠️ `OPENAI_MODEL` doit désigner un modèle **existant** côté OpenAI. Une valeur
+> fictive (ex. `gpt-5.6`) fait échouer l'API avec « model not found ».
 
 **Codex — assistant de développement.** Nous avons utilisé **Codex** (l'agent de
 code d'OpenAI) pour concevoir et itérer sur le projet : backend FastAPI (auth,
@@ -127,4 +131,4 @@ xeer-ai/
 ## Tech stack
 
 Python · FastAPI · SQLite · ChromaDB · Sentence Transformers ·
-OpenAI API (**GPT-5.6**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract
+OpenAI API (**GPT-4o**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract

@@ -168,13 +168,39 @@ Rappels :
 """
     messages.append({"role": "user", "content": user_prompt})
 
-    response = _openai_client.chat.completions.create(
-        model=config.OPENAI_MODEL,
-        messages=messages,
-        temperature=0.1,
-        max_tokens=500,
-    )
+    try:
+        response = _openai_client.chat.completions.create(
+            model=config.OPENAI_MODEL,
+            messages=messages,
+            temperature=0.1,
+            max_tokens=500,
+        )
+    except Exception as exc:  # openai.APIError, AuthenticationError, etc.
+        raise RuntimeError(_openai_error_message(exc)) from exc
+
     return response.choices[0].message.content.strip()
+
+
+def _openai_error_message(exc: Exception) -> str:
+    """Traduit une erreur OpenAI en message clair et actionnable."""
+    status = getattr(exc, "status_code", None)
+    detail = str(exc)
+    if status == 401 or "api_key" in detail.lower() or "authentication" in detail.lower():
+        return (
+            "Clé OpenAI invalide ou expirée (OPENAI_API_KEY). "
+            "Vérifie la variable d'environnement sur ton déploiement."
+        )
+    if status == 404 or "model" in detail.lower() and "not" in detail.lower():
+        return (
+            f"Le modèle OpenAI '{config.OPENAI_MODEL}' est introuvable. "
+            "Utilise un modèle réel (ex. gpt-4o-mini, gpt-4o) via OPENAI_MODEL."
+        )
+    if status == 429 or "rate limit" in detail.lower() or "quota" in detail.lower():
+        return (
+            "Quota OpenAI dépassé ou limite de débit atteinte. "
+            "Vérifie la facturation de ton compte OpenAI et réessaie."
+        )
+    return f"Erreur lors de l'appel à l'API OpenAI : {detail}"
 
 
 def demo_answer(question: str) -> tuple[str, list[dict[str, Any]]]:

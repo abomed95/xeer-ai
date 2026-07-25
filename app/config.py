@@ -25,7 +25,10 @@ DEMO_MODE = (
 DB_DIR = os.getenv("XEER_CHROMA_DIR", "chroma_db")
 COLLECTION_NAME = "xeer_chunks"
 EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6")
+# Modèle OpenAI réel utilisé par l'API (doit exister côté OpenAI).
+# `gpt-4o-mini` est un bon défaut : multilingue (somali/arabe/français/anglais),
+# économique et disponible. Passe à `gpt-4o` pour une qualité supérieure.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 MAX_HISTORY_MESSAGES = 6  # 3 échanges user/assistant
 
 # --- Compte administrateur initial ---

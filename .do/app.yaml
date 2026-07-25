@@ -1,11 +1,18 @@
-# Spec DigitalOcean App Platform — déploiement démo de Xeer AI.
+# Spec DigitalOcean App Platform — déploiement de Xeer AI.
 #
 # Déploiement en 1 clic :
 #   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main
 #
-# Lance la plateforme complète en MODE DÉMO : comptes, quotas, paiements
-# sandbox et admin, sans clé OpenAI ni index vectoriel. Build léger via
-# requirements-demo.txt (tient dans une instance basic 512 Mo).
+# Par défaut : MODE DÉMO (comptes, quotas, paiements sandbox et admin, sans clé
+# OpenAI ni index vectoriel). Build léger via requirements-demo.txt (tient dans
+# une instance basic 512 Mo).
+#
+# ── Passer en MODE COMPLET (vraie IA OpenAI + RAG) ─────────────────────────
+#   1. build_command : pip install -r requirements.txt   (index vectoriel requis)
+#   2. XEER_DEMO_MODE : "0"
+#   3. Ajoute le secret OPENAI_API_KEY (dashboard DO → Settings → App-Level Env)
+#      avec une clé OpenAI valide, et vérifie OPENAI_MODEL (modèle réel).
+#   4. instance_size_slug : au moins basic-xs (le RAG charge des modèles lourds).
 name: xeer-ai-demo
 region: fra   # Francfort (proche Djibouti/Europe) — change si besoin
 services:
@@ -37,3 +44,12 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: xeer-demo-2026
+      # Modèle OpenAI réel (utilisé uniquement en mode complet, XEER_DEMO_MODE=0).
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # En mode complet, ajoute aussi le secret OPENAI_API_KEY depuis le
+      # dashboard DigitalOcean (ne jamais committer une vraie clé ici) :
+      # - key: OPENAI_API_KEY
+      #   scope: RUN_TIME
+      #   type: SECRET
+      #   value: sk-...
