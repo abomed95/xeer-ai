@@ -160,11 +160,15 @@ body {
 .nav-toggle[aria-expanded="true"] span::before { transform: translateY(6px) rotate(45deg); }
 .nav-toggle[aria-expanded="true"] span::after { transform: translateY(-6px) rotate(-45deg); }
 
+/* Ces règles sont volontairement limitées à .nav-sticky, c'est-à-dire à la
+   landing et aux pages légales. L'espace client (app.html) réutilise la classe
+   .nav-links pour sa barre d'outils : l'empiler en colonne pleine largeur y
+   occuperait les deux tiers de l'écran. */
 @media (max-width: 860px) {
-  .nav { padding: 12px 0; }
-  .nav-toggle { display: grid; }
+  .nav-sticky .nav { padding: 12px 0; }
+  .nav-sticky .nav-toggle { display: grid; }
   /* Le menu s'empile sous la barre plutôt que de la faire déborder. */
-  .nav-links {
+  .nav-sticky .nav-links {
     display: none;
     width: 100%;
     order: 3;
@@ -175,9 +179,9 @@ body {
     border-top: 1px solid var(--line2);
     margin-top: 10px;
   }
-  .nav-links.open { display: flex; }
-  .nav-links a.link { padding: 12px 12px; font-size: 1rem; min-height: 44px; display: flex; align-items: center; }
-  .nav-links .btn { width: 100%; margin-top: 6px; }
+  .nav-sticky .nav-links.open { display: flex; }
+  .nav-sticky .nav-links a.link { padding: 12px 12px; font-size: 1rem; min-height: 44px; display: flex; align-items: center; }
+  .nav-sticky .nav-links .btn { width: 100%; margin-top: 6px; }
 }
 
 /* --- Boutons --- */
@@ -387,24 +391,6 @@ table.data th {
   gap: 14px;
   flex-wrap: wrap;
 }
-
-/* Bandeau légal discret de l'espace client. */
-.app-legal {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 18px;
-  margin-top: 30px;
-  padding: 18px 0 calc(24px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line2);
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.app-legal a { color: var(--muted); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
-.app-legal a:hover { color: var(--gold2); }
-.app-legal-credit { margin-left: auto; }
-.app-legal-credit strong { color: var(--gold2); }
-@media (max-width: 560px) { .app-legal-credit { margin-left: 0; } }
 
 /* ============================================================
    Pages légales — mise en page de lecture longue
