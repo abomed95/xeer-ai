@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app import config
+from app import config, database
 from app.database import get_db, init_db, utcnow
 from app.routers import admin, auth, billing, chat
 from app.security import hash_password
@@ -62,12 +62,25 @@ def seed_admin():
 
 @app.on_event("startup")
 def startup_event():
+    # Refuse de démarrer si la configuration de production n'est pas sûre
+    # (secrets par défaut) ; signale les points d'attention restants.
+    for warning in config.check_production_config():
+        print(f"[Xeer AI] ⚠️  {warning}")
+
     init_db()
     seed_admin()
+    print(f"[Xeer AI] Base de données : {database.backend_name()}")
 
 
 @app.get("/api/health")
 def health():
+    """État de l'API — sert aussi de health check DigitalOcean.
+
+    `demo_mode: false` + `openai_key_set` + `rag_ready` tous vrais = mode
+    complet réellement actif (vraie IA sur le corpus indexé).
+    """
+    from app.services import rag
+
     return {
         "status": "ok",
         "app": config.APP_NAME,
@@ -75,6 +88,10 @@ def health():
         "demo_mode": config.DEMO_MODE,
         "payments_mode": config.PAYMENTS_MODE,
         "llm_model": config.OPENAI_MODEL,
+        "openai_key_set": bool(config.OPENAI_API_KEY),
+        "rag_ready": rag.index_ready(),
+        "database": database.backend_name(),
+        "persistent_storage": database.IS_POSTGRES,
     }
 
 

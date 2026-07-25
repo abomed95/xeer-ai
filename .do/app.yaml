@@ -1,13 +1,49 @@
-# Spec DigitalOcean App Platform — déploiement démo de Xeer AI.
+# Spec DigitalOcean App Platform — Xeer AI en PRODUCTION.
 #
 # Déploiement en 1 clic :
 #   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main
 #
-# Lance la plateforme complète en MODE DÉMO : comptes, quotas, paiements
-# sandbox et admin, sans clé OpenAI ni index vectoriel. Build léger via
-# requirements-demo.txt (tient dans une instance basic 512 Mo).
-name: xeer-ai-demo
+# Ce que fait cette spec :
+#   • installe les dépendances complètes (ChromaDB, Sentence Transformers, openai) ;
+#   • CONSTRUIT l'index vectoriel au build depuis data/pages/clean (131 pages
+#     versionnées) — sans quoi le RAG répondrait « collection introuvable » ;
+#   • provisionne une base PostgreSQL managée : comptes clients, paiements et
+#     historiques SURVIVENT aux redéploiements (le disque d'App Platform est
+#     éphémère : sans base managée, tout serait perdu à chaque déploiement) ;
+#   • lance l'API en mode complet, réponses générées par OpenAI.
+#
+# ⚠️ AUCUN SECRET N'EST STOCKÉ DANS CE FICHIER — il est public sur GitHub.
+#    Les deux variables ci-dessous sont à créer dans le dashboard DigitalOcean :
+#      ton app → Settings → App-Level Environment Variables → Edit
+#
+#      1. OPENAI_API_KEY   = sk-...                     (coche « Encrypt »)
+#      2. XEER_SECRET_KEY  = une longue chaîne aléatoire (coche « Encrypt »)
+#         Génère-la avec :
+#           python -c "import secrets; print(secrets.token_urlsafe(48))"
+#
+#    Sans XEER_SECRET_KEY, l'API REFUSE de démarrer en production : avec une
+#    valeur connue, n'importe qui pourrait forger un jeton d'administrateur.
+#
+# Mot de passe administrateur : laissé non défini volontairement. Au premier
+# démarrage, un mot de passe aléatoire est généré et affiché dans les logs DO
+# (Runtime Logs). Récupère-le, connecte-toi sur /admin.html, puis change-le.
+# Tu peux aussi définir XEER_ADMIN_PASSWORD (chiffré) dans le dashboard.
+#
+# Vérification après déploiement — GET /api/health doit renvoyer :
+#   demo_mode: false · openai_key_set: true · rag_ready: true
+#   database: "postgresql" · persistent_storage: true
+name: xeer-ai   # ⚠️ renommer ce champ sur une app existante en crée une nouvelle
 region: fra   # Francfort (proche Djibouti/Europe) — change si besoin
+
+databases:
+  # Base PostgreSQL managée, sauvegardée par DigitalOcean.
+  # production: false = base de développement (~7 $/mois), suffisante pour
+  # démarrer. Passe à true (+ size/num_nodes) pour un cluster haute dispo.
+  - name: db
+    engine: PG
+    version: "16"
+    production: false
+
 services:
   - name: web
     github:
@@ -15,25 +51,40 @@ services:
       branch: main
       deploy_on_push: true
     environment_slug: python
-    build_command: pip install -r requirements-demo.txt
+    # Torch en version CPU d'abord : ~5x plus léger que la version CUDA par
+    # défaut, indispensable pour tenir dans le build DigitalOcean.
+    build_command: |
+      pip install --upgrade pip
+      pip install torch --index-url https://download.pytorch.org/whl/cpu
+      pip install -r requirements.txt
+      python scripts/build_vector_store.py
     run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    instance_size_slug: basic-xxs   # ~5 $/mois (App Platform n'a pas de tier gratuit pour les services)
+    # Le RAG charge un modèle d'embeddings multilingue en mémoire : 512 Mo
+    # (basic-xxs) ne suffisent pas — basic-s (2 Go) est le palier confortable.
+    instance_size_slug: basic-s
     instance_count: 1
     http_port: 8080
     health_check:
-      http_path: /
+      http_path: /api/health
     envs:
+      # Mode complet : réponses générées par l'API OpenAI sur la base du corpus.
       - key: XEER_DEMO_MODE
-        value: "1"
-      - key: XEER_PAYMENTS_MODE
-        value: sandbox
-      - key: XEER_SECRET_KEY
+        value: "0"
+      # Connexion à la base managée, injectée automatiquement par DigitalOcean.
+      - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
-        value: "change-me-en-une-longue-chaine-aleatoire"
+        value: ${db.DATABASE_URL}
+      # Modèle OpenAI réel (gpt-4o pour une qualité supérieure).
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # Emplacement de l'index vectoriel construit au build.
+      - key: XEER_CHROMA_DIR
+        value: chroma_db
       - key: XEER_ADMIN_EMAIL
         value: admin@xeer.ai
-      - key: XEER_ADMIN_PASSWORD
-        scope: RUN_TIME
-        type: SECRET
-        value: xeer-demo-2026
+      # Paiements simulés. Passe à "live" avec tes identifiants marchands
+      # (WAAFI_*, CACBANK_*, CARD_GATEWAY_*) pour encaisser réellement.
+      - key: XEER_PAYMENTS_MODE
+        value: sandbox
+      # OPENAI_API_KEY et XEER_SECRET_KEY : à créer dans le dashboard (voir
+      # l'en-tête). Ne jamais committer de secret dans ce fichier.

@@ -6,33 +6,66 @@ Assistant IA du **Xeer Ciise** (droit coutumier somali) — plateforme SaaS
 complète : application web moderne (PWA installable + APK Android), comptes
 utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
-## Démo en ligne
+## Déploiement en ligne
 
-Déploiement « un clic » en **mode démo** (aucune clé OpenAI requise) :
+### DigitalOcean App Platform — **production**
 
-**DigitalOcean App Platform** — [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
-(spec : [`.do/app.yaml`](.do/app.yaml)). DigitalOcean lit le spec, construit
-l'app et te fournit l'URL publique.
+[Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
+(spec : [`.do/app.yaml`](.do/app.yaml) · **procédure détaillée :
+[`docs/DEPLOY_DIGITALOCEAN.md`](docs/DEPLOY_DIGITALOCEAN.md)**)
 
-**Render** — [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+La spec déploie la plateforme en conditions réelles :
+
+- **IA réelle** — génération OpenAI, `XEER_DEMO_MODE=0` ;
+- **index vectoriel construit au build** depuis `data/pages/clean` (131 pages) ;
+- **base PostgreSQL managée** — comptes, paiements et historiques survivent aux
+  redéploiements (le disque d'App Platform est éphémère).
+
+Deux secrets à créer dans le dashboard (jamais committés) : `OPENAI_API_KEY` et
+`XEER_SECRET_KEY`. Vérifie ensuite **`/api/health`** :
+
+```json
+{ "demo_mode": false, "openai_key_set": true, "rag_ready": true,
+  "database": "postgresql", "persistent_storage": true }
+```
+
+> App Platform applique la spec **stockée chez DigitalOcean**, pas le fichier du
+> dépôt : un `git push` met à jour le code mais pas la configuration. Applique la
+> spec une fois via `doctl apps update <APP_ID> --spec .do/app.yaml` (ou par le
+> dashboard) — voir [`docs/DEPLOY_DIGITALOCEAN.md`](docs/DEPLOY_DIGITALOCEAN.md).
+
+**Sécurité au démarrage** : l'API refuse de démarrer en production si
+`XEER_SECRET_KEY` garde sa valeur par défaut (jetons admin forgeables) ou si le
+mot de passe admin est celui de la démo. Sans clé OpenAI valide, elle ne plante
+pas : elle retombe en réponses de démonstration.
+
+### Render — **mode démo** (aucune clé requise)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 (spec : [`render.yaml`](render.yaml)). Colle l'URL du dépôt sur
-https://render.com/deploy.
-
-Les deux lancent toute la plateforme (comptes, quotas, paiements sandbox, admin)
-sans clé ni index vectoriel, via le build léger
+https://render.com/deploy. Lance toute la plateforme (comptes, quotas, paiements
+sandbox, admin) sans clé ni index vectoriel, via le build léger
 [`requirements-demo.txt`](requirements-demo.txt).
 
-## Utilisation de Codex & GPT-5.6 (OpenAI Build Week)
+> Le déploiement Render reste en SQLite éphémère : c'est une vitrine, pas une
+> production. Pour de vrais clients, utilise la spec DigitalOcean ci-dessus
+> (PostgreSQL managé).
+
+## Utilisation de Codex & GPT-4o (OpenAI Build Week)
 
 <!-- NOTE ÉQUIPE : adaptez le paragraphe « Codex » à ce que vous avez réellement fait. -->
 
-**GPT-5.6 — le cœur du produit.** Le moteur de réponses de Xeer AI s'appuie sur
-**GPT-5.6** via l'API OpenAI (`OPENAI_MODEL=gpt-5.6`). Dans le pipeline RAG, les
-passages les plus pertinents du corpus numérisé du Xeer Ciise sont récupérés
-(ChromaDB) puis fournis à GPT-5.6 avec une consigne stricte : s'appuyer
+**Le modèle OpenAI — le cœur du produit.** Le moteur de réponses de Xeer AI
+s'appuie sur l'API OpenAI. Utilisez un **modèle réel** via `OPENAI_MODEL`
+(défaut : `gpt-4o-mini` ; `gpt-4o` pour une qualité supérieure). Dans le pipeline
+RAG, les passages les plus pertinents du corpus numérisé du Xeer Ciise sont
+récupérés (ChromaDB) puis fournis au modèle avec une consigne stricte : s'appuyer
 uniquement sur ces extraits et citer les pages sources. D'où des réponses
 multilingues (somali, arabe, français, anglais), structurées et **vérifiables**.
 Voir [`app/services/rag.py`](app/services/rag.py).
+
+> ⚠️ `OPENAI_MODEL` doit désigner un modèle **existant** côté OpenAI. Une valeur
+> fictive (ex. `gpt-5.6`) fait échouer l'API avec « model not found ».
 
 **Codex — assistant de développement.** Nous avons utilisé **Codex** (l'agent de
 code d'OpenAI) pour concevoir et itérer sur le projet : backend FastAPI (auth,
@@ -127,4 +160,4 @@ xeer-ai/
 ## Tech stack
 
 Python · FastAPI · SQLite · ChromaDB · Sentence Transformers ·
-OpenAI API (**GPT-5.6**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract
+OpenAI API (**GPT-4o**) · PWA (vanilla JS) · OCR PyMuPDF + Tesseract

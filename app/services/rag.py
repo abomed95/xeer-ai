@@ -15,9 +15,19 @@ _collection = None
 _openai_client = None
 
 
+def index_ready() -> bool:
+    """Vrai si un index vectoriel semble présent sur disque (contrôle léger).
+
+    Volontairement sans import de chromadb : sert au diagnostic /api/health.
+    """
+    from pathlib import Path
+
+    db_dir = Path(config.DB_DIR)
+    return db_dir.is_dir() and any(db_dir.iterdir())
+
+
 def load_dependencies():
     global _embed_model, _client_db, _collection, _openai_client
-    import os
 
     import chromadb
     from openai import OpenAI
@@ -39,10 +49,12 @@ def load_dependencies():
             ) from exc
 
     if _openai_client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY introuvable dans .env")
-        _openai_client = OpenAI(api_key=api_key)
+        if not config.OPENAI_API_KEY:
+            raise RuntimeError(
+                "OPENAI_API_KEY manquante. En local : renseigne-la dans .env. "
+                "Sur DigitalOcean : App → Settings → Environment Variables."
+            )
+        _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 
 def is_bad_result(text: str) -> bool:
@@ -168,13 +180,39 @@ Rappels :
 """
     messages.append({"role": "user", "content": user_prompt})
 
-    response = _openai_client.chat.completions.create(
-        model=config.OPENAI_MODEL,
-        messages=messages,
-        temperature=0.1,
-        max_tokens=500,
-    )
+    try:
+        response = _openai_client.chat.completions.create(
+            model=config.OPENAI_MODEL,
+            messages=messages,
+            temperature=0.1,
+            max_tokens=500,
+        )
+    except Exception as exc:  # openai.APIError, AuthenticationError, etc.
+        raise RuntimeError(_openai_error_message(exc)) from exc
+
     return response.choices[0].message.content.strip()
+
+
+def _openai_error_message(exc: Exception) -> str:
+    """Traduit une erreur OpenAI en message clair et actionnable."""
+    status = getattr(exc, "status_code", None)
+    detail = str(exc)
+    if status == 401 or "api_key" in detail.lower() or "authentication" in detail.lower():
+        return (
+            "Clé OpenAI invalide ou expirée (OPENAI_API_KEY). "
+            "Vérifie la variable d'environnement sur ton déploiement."
+        )
+    if status == 404 or "model" in detail.lower() and "not" in detail.lower():
+        return (
+            f"Le modèle OpenAI '{config.OPENAI_MODEL}' est introuvable. "
+            "Utilise un modèle réel (ex. gpt-4o-mini, gpt-4o) via OPENAI_MODEL."
+        )
+    if status == 429 or "rate limit" in detail.lower() or "quota" in detail.lower():
+        return (
+            "Quota OpenAI dépassé ou limite de débit atteinte. "
+            "Vérifie la facturation de ton compte OpenAI et réessaie."
+        )
+    return f"Erreur lors de l'appel à l'API OpenAI : {detail}"
 
 
 def demo_answer(question: str) -> tuple[str, list[dict[str, Any]]]:
