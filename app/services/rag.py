@@ -26,6 +26,39 @@ def index_ready() -> bool:
     return db_dir.is_dir() and any(db_dir.iterdir())
 
 
+def model_cached() -> bool:
+    """Vrai si le modèle d'embeddings est présent en cache local.
+
+    Si faux en production, la première question déclenche un téléchargement de
+    ~460 Mo depuis HuggingFace : lenteur et dépendance externe.
+    """
+    from pathlib import Path
+
+    cache = Path(config.MODEL_CACHE_DIR)
+    if not cache.is_dir():
+        return False
+    return any(cache.rglob("*.safetensors")) or any(cache.rglob("pytorch_model.bin"))
+
+
+def model_loaded() -> bool:
+    """Vrai si le modèle est déjà chargé en mémoire (préchauffage terminé)."""
+    return _embed_model is not None
+
+
+def warm() -> None:
+    """Précharge le moteur RAG en tâche de fond au démarrage.
+
+    Sans cela, le premier client à poser une question paie le chargement du
+    modèle. Les erreurs sont journalisées sans interrompre le service : l'appel
+    suivant à /ask retentera et remontera l'erreur au client.
+    """
+    try:
+        load_dependencies()
+        print("[Xeer AI] Moteur RAG préchargé (modèle d'embeddings en mémoire).")
+    except Exception as exc:  # noqa: BLE001 — diagnostic, ne doit rien casser
+        print(f"[Xeer AI] ⚠️  Préchargement du moteur RAG impossible : {exc}")
+
+
 def load_dependencies():
     global _embed_model, _client_db, _collection, _openai_client
 
