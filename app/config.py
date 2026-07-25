@@ -26,7 +26,11 @@ DATABASE_PATH = os.getenv("XEER_DATABASE_PATH", "xeer.db")
 # OpenAI n'est configurée, pour qu'un déploiement de démonstration fonctionne
 # toujours (chat simulé, aucune dépendance lourde requise).
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-DEMO_MODE = os.getenv("XEER_DEMO_MODE", "0") == "1" or not OPENAI_API_KEY
+# Démo demandée explicitement, à distinguer du repli automatique ci-dessous :
+# un déploiement de production sans clé OpenAI retombe en démo, mais ne doit
+# pas pour autant hériter des identifiants de démonstration.
+DEMO_MODE_EXPLICIT = os.getenv("XEER_DEMO_MODE", "0") == "1"
+DEMO_MODE = DEMO_MODE_EXPLICIT or not OPENAI_API_KEY
 
 # --- RAG / LLM ---
 DB_DIR = os.getenv("XEER_CHROMA_DIR", "chroma_db")

@@ -47,15 +47,25 @@ def seed_admin():
         ).fetchone()
         if existing:
             return
-        password = config.ADMIN_PASSWORD or (
-            config.DEMO_ADMIN_PASSWORD if config.DEMO_MODE else secrets.token_urlsafe(12)
-        )
+        # Le mot de passe de démonstration est public : il ne sert que si la
+        # démo est demandée explicitement. Un déploiement de production sans clé
+        # OpenAI retombe en démo, mais reçoit un mot de passe aléatoire.
+        if config.ADMIN_PASSWORD:
+            password, genere = config.ADMIN_PASSWORD, False
+        elif config.DEMO_MODE_EXPLICIT:
+            password, genere = config.DEMO_ADMIN_PASSWORD, False
+        else:
+            password, genere = secrets.token_urlsafe(12), True
+
         db.execute(
             "INSERT INTO users (email, password_hash, full_name, role, plan, created_at) "
             "VALUES (?, ?, ?, 'admin', 'premium', ?)",
             (config.ADMIN_EMAIL, hash_password(password), "Administrateur", utcnow()),
         )
-    if not config.ADMIN_PASSWORD and not config.DEMO_MODE:
+
+    # Un mot de passe généré n'existe nulle part ailleurs : il DOIT être affiché,
+    # sinon le compte administrateur devient inaccessible.
+    if genere:
         print(f"[Xeer AI] Compte admin créé : {config.ADMIN_EMAIL} / {password}")
         print("[Xeer AI] Définissez XEER_ADMIN_PASSWORD pour un mot de passe stable.")
 
