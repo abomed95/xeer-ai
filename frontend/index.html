@@ -54,6 +54,9 @@
     }
 
     section { padding: 44px 0 8px; }
+    /* L'en-tête collant ne doit pas recouvrir le titre de la section visée
+       par un lien d'ancrage. */
+    section[id] { scroll-margin-top: 86px; }
     .section-head { text-align: center; max-width: 620px; margin: 0 auto 30px; }
     .section-head h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); margin: 12px 0 8px; letter-spacing: -0.01em; }
     .section-head p { color: var(--muted); }
@@ -86,20 +89,114 @@
       grid-template-columns: 1.3fr 0.7fr; align-items: center;
     }
     @media (max-width: 800px) { .apk-band { grid-template-columns: 1fr; } }
+
+    /* --- Bandeau de chiffres --- */
+    .stats {
+      display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr);
+      margin: 8px 0 6px;
+    }
+    @media (min-width: 760px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { padding: 20px; text-align: center; }
+    .stat .num {
+      font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 900;
+      color: var(--gold2); letter-spacing: -0.02em; display: block;
+    }
+    .stat .lbl { color: var(--muted); font-size: 0.82rem; margin-top: 2px; display: block; }
+
+    /* --- Comment ça marche --- */
+    .steps { counter-reset: step; }
+    .step { padding: 22px; position: relative; }
+    .step::before {
+      counter-increment: step; content: counter(step);
+      display: grid; place-items: center;
+      width: 38px; height: 38px; border-radius: 12px; margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #0b1420; font-weight: 900; font-size: 1.05rem;
+    }
+    .step h3 { margin: 0 0 6px; font-size: 1.02rem; }
+    .step p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+    /* --- Exemples de questions --- */
+    .questions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .qchip {
+      padding: 11px 16px; border-radius: 999px; text-decoration: none;
+      border: 1px solid var(--line2); background: rgba(255,255,255,0.04);
+      color: var(--text); font-size: 0.88rem; font-weight: 600;
+      min-height: 42px; display: inline-flex; align-items: center;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .qchip:hover { border-color: var(--gold); color: var(--gold2); }
+
+    /* --- Cas d'usage --- */
+    .usecase { padding: 22px; display: flex; gap: 14px; align-items: flex-start; }
+    .usecase .ico { font-size: 1.5rem; line-height: 1; }
+    .usecase h3 { margin: 0 0 4px; font-size: 1rem; }
+    .usecase p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+    /* --- FAQ (sans JavaScript) --- */
+    .faq { display: grid; gap: 12px; max-width: 760px; margin: 0 auto; }
+    .faq details {
+      border: 1px solid var(--line2); border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.03); padding: 0 18px;
+    }
+    .faq details[open] { border-color: var(--line); background: rgba(212,175,55,0.05); }
+    .faq summary {
+      cursor: pointer; padding: 16px 0; font-weight: 700; font-size: 0.96rem;
+      list-style: none; display: flex; justify-content: space-between;
+      align-items: center; gap: 14px; min-height: 44px;
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; color: var(--gold2); font-size: 1.35rem; font-weight: 400; }
+    .faq details[open] summary::after { content: "−"; }
+    .faq p { margin: 0 0 16px; color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+
+    /* --- Ajustements smartphone --- */
+    @media (max-width: 640px) {
+      .hero { padding: 22px 0 12px; gap: 16px; }
+      .hero .card, .card { padding: 20px; }
+      .hero p.lead { font-size: 0.98rem; }
+      /* Les boutons pleine largeur évitent les cibles étroites. */
+      .hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
+      .hero-cta .btn { width: 100%; }
+      section { padding: 32px 0 4px; }
+      .section-head { margin-bottom: 22px; }
+      .bubble { max-width: 100%; font-size: 0.86rem; }
+      .trust-row { padding: 6px 0 20px; }
+      .plan .price { font-size: 2rem; }
+      .apk-band { margin-top: 34px; padding: 22px; }
+      /* Ombres allégées : moins de charge de composition au défilement. */
+      .card { box-shadow: 0 10px 26px rgba(0,0,0,0.28); }
+      .preview-chat { order: 2; }
+    }
+    @media (max-width: 380px) {
+      .stats { grid-template-columns: 1fr; }
+      .pay-badge { font-size: 0.74rem; padding: 6px 10px; }
+    }
   </style>
 </head>
 <body>
+  <div class="nav-sticky" id="nav-sticky">
+    <div class="container">
+      <nav class="nav">
+        <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span></a>
+        <button class="nav-toggle" id="nav-toggle" type="button"
+                aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
+          <span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
+          <a class="link" href="#features">Fonctionnalités</a>
+          <a class="link" href="#how">Comment ça marche</a>
+          <a class="link" href="#pricing">Tarifs</a>
+          <a class="link" href="#faq">FAQ</a>
+          <a class="link" href="#organisations">Organisations</a>
+          <a class="btn btn-secondary btn-sm" href="/app.html">Se connecter</a>
+          <a class="btn btn-primary btn-sm" href="/app.html?signup=1">Essai gratuit</a>
+        </div>
+      </nav>
+    </div>
+  </div>
+
   <div class="container">
-    <nav class="nav">
-      <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span></a>
-      <div class="nav-links">
-        <a class="link" href="#features">Fonctionnalités</a>
-        <a class="link" href="#pricing">Tarifs</a>
-        <a class="link" href="#organisations">Organisations</a>
-        <a class="btn btn-secondary btn-sm" href="/app.html">Se connecter</a>
-        <a class="btn btn-primary btn-sm" href="/app.html?signup=1">Essai gratuit</a>
-      </div>
-    </nav>
 
     <header class="hero">
       <div class="card">
@@ -141,6 +238,25 @@
       <span class="pay-badge">MasterCard</span>
     </div>
 
+    <div class="stats">
+      <div class="card stat">
+        <span class="num">131</span>
+        <span class="lbl">pages numérisées du Xeer Ciise</span>
+      </div>
+      <div class="card stat">
+        <span class="num">173</span>
+        <span class="lbl">passages indexés et citables</span>
+      </div>
+      <div class="card stat">
+        <span class="num">4</span>
+        <span class="lbl">langues : so · ar · fr · en</span>
+      </div>
+      <div class="card stat">
+        <span class="num">100 %</span>
+        <span class="lbl">réponses avec page source</span>
+      </div>
+    </div>
+
     <section id="features">
       <div class="section-head">
         <span class="badge">Fonctionnalités</span>
@@ -177,6 +293,89 @@
           <div class="icon">🛡️</div>
           <h3>Comptes sécurisés</h3>
           <p>Authentification chiffrée, quotas transparents et historique de paiements.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="section-head">
+        <span class="badge">Comment ça marche</span>
+        <h2>Une réponse sourcée en trois temps</h2>
+        <p>Aucune improvisation : le moteur part toujours du texte du livre.</p>
+      </div>
+      <div class="grid grid-3 steps">
+        <div class="card step">
+          <h3>Posez votre question</h3>
+          <p>En somali, arabe, français ou anglais — écrivez comme vous parlez,
+             l'assistant répond dans votre langue.</p>
+        </div>
+        <div class="card step">
+          <h3>Le corpus est fouillé</h3>
+          <p>La recherche sémantique isole les passages du Xeer Ciise réellement
+             pertinents, au-delà des simples mots-clés.</p>
+        </div>
+        <div class="card step">
+          <h3>La réponse cite ses pages</h3>
+          <p>Définition, explication, importance — puis la page exacte du livre,
+             pour que vous puissiez vérifier vous-même.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="examples">
+      <div class="section-head">
+        <span class="badge">Exemples</span>
+        <h2>Ce que vous pouvez demander</h2>
+        <p>Quelques questions parmi les plus fréquentes.</p>
+      </div>
+      <div class="questions">
+        <a class="qchip" href="/app.html?signup=1">Waa maxay xeerka guurka?</a>
+        <a class="qchip" href="/app.html?signup=1">Comment est calculée la magta (diya) ?</a>
+        <a class="qchip" href="/app.html?signup=1">Quel est le rôle des odayaal ?</a>
+        <a class="qchip" href="/app.html?signup=1" dir="rtl">كيف تُحل النزاعات بين العائلات؟</a>
+        <a class="qchip" href="/app.html?signup=1">Xeerka nabaddoonka waa maxay?</a>
+        <a class="qchip" href="/app.html?signup=1">What does the Xeer say about inheritance?</a>
+      </div>
+    </section>
+
+    <section id="usecases">
+      <div class="section-head">
+        <span class="badge">Cas d'usage</span>
+        <h2>Pour qui ?</h2>
+        <p>Un même corpus, des usages très différents.</p>
+      </div>
+      <div class="grid grid-2">
+        <div class="card usecase">
+          <span class="ico">🎓</span>
+          <div>
+            <h3>Universités et chercheurs</h3>
+            <p>Explorer le droit coutumier avec des références de pages
+               citables dans un travail académique.</p>
+          </div>
+        </div>
+        <div class="card usecase">
+          <span class="ico">⚖️</span>
+          <div>
+            <h3>Odayaal, tribunaux et médiateurs</h3>
+            <p>Retrouver rapidement la règle coutumière applicable à un
+               différend et la vérifier dans le texte.</p>
+          </div>
+        </div>
+        <div class="card usecase">
+          <span class="ico">🏛️</span>
+          <div>
+            <h3>Institutions et ONG</h3>
+            <p>Former des équipes au droit coutumier local avec une source
+               unique et cohérente.</p>
+          </div>
+        </div>
+        <div class="card usecase">
+          <span class="ico">🌍</span>
+          <div>
+            <h3>Diaspora et familles</h3>
+            <p>Transmettre le patrimoine juridique somali aux nouvelles
+               générations, dans leur langue.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -279,12 +478,133 @@
       </div>
     </div>
 
-    <footer class="footer">
-      <div>© 2026 Xeer AI — Préserver et transmettre le droit coutumier somali.</div>
-      <div>
-        <a class="link" href="/app.html" style="color:var(--muted); text-decoration:none;">Application</a> ·
-        <a class="link" href="#pricing" style="color:var(--muted); text-decoration:none;">Tarifs</a> ·
-        <a class="link" href="/admin.html" style="color:var(--muted); text-decoration:none;">Administration</a>
+    <section id="faq">
+      <div class="section-head">
+        <span class="badge">FAQ</span>
+        <h2>Questions fréquentes</h2>
+        <p>Ce qu'on nous demande le plus souvent.</p>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>D'où viennent les réponses ?</summary>
+          <p>
+            Exclusivement du corpus numérisé du livre <em>Xeer Ciise</em>. Le moteur
+            retrouve les passages pertinents et les transmet au modèle avec une
+            consigne stricte : ne rien affirmer qui ne figure pas dans ces extraits.
+            Chaque réponse se termine par la page source, que vous pouvez vérifier.
+          </p>
+        </details>
+        <details>
+          <summary>Dans quelles langues puis-je poser mes questions ?</summary>
+          <p>
+            En somali, arabe, français et anglais. L'assistant répond toujours dans
+            la langue de votre question. Les termes propres au Xeer
+            (<em>odayaal</em>, <em>magta</em>, <em>xeer</em>…) restent en somali,
+            accompagnés d'une courte explication.
+          </p>
+        </details>
+        <details>
+          <summary>Le plan gratuit suffit-il pour essayer ?</summary>
+          <p>
+            Oui : 3 questions par mois, sans carte bancaire et sans engagement.
+            Passez à Premium (10 $/mois) uniquement si vous avez besoin de
+            questions illimitées ; l'abonnement est annulable à tout moment.
+          </p>
+        </details>
+        <details>
+          <summary>Quels moyens de paiement acceptez-vous ?</summary>
+          <p>
+            Waafi (mobile money), CAC Bank, ainsi que les cartes Visa et
+            MasterCard. Vous retrouvez l'historique complet de vos paiements dans
+            votre compte.
+          </p>
+        </details>
+        <details>
+          <summary>Mes conversations sont-elles privées ?</summary>
+          <p>
+            Vos conversations sont rattachées à votre compte et ne sont accessibles
+            qu'à vous. Les mots de passe sont stockés sous forme chiffrée
+            (PBKDF2) et ne peuvent pas être lus, même par nous.
+          </p>
+        </details>
+        <details>
+          <summary>Puis-je l'utiliser sur mon téléphone ?</summary>
+          <p>
+            Oui. Xeer AI est une application web progressive : installez-la depuis
+            votre navigateur mobile en un clic, ou téléchargez l'application
+            Android. Votre compte et votre historique vous suivent sur tous vos
+            appareils.
+          </p>
+        </details>
+        <details>
+          <summary>Je représente une organisation, comment procéder ?</summary>
+          <p>
+            Utilisez le formulaire « Organisations » ci-dessus : nous revenons vers
+            vous sous 24 h avec une offre sur mesure (tarif négocié, comptes
+            multiples, quotas adaptés et accompagnement dédié).
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div class="footer-about">
+          <a class="brand" href="/"><span class="brand-badge">⚖️</span>Xeer <span>AI</span></a>
+          <p>
+            L'assistant IA du <strong>Xeer Ciise</strong>, le droit coutumier somali.
+            Xeer AI rend un patrimoine juridique transmis oralement accessible en
+            quatre langues, avec des réponses toujours rattachées à leur page source.
+          </p>
+          <div class="footer-langs">
+            <span class="chip">Soomaali</span>
+            <span class="chip">العربية</span>
+            <span class="chip">Français</span>
+            <span class="chip">English</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h3>Produit</h3>
+          <ul>
+            <li><a href="/app.html">Ouvrir l'application</a></li>
+            <li><a href="#features">Fonctionnalités</a></li>
+            <li><a href="#how">Comment ça marche</a></li>
+            <li><a href="#pricing">Tarifs</a></li>
+            <li><a href="#examples">Exemples de questions</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h3>Ressources</h3>
+          <ul>
+            <li><a href="#faq">Questions fréquentes</a></li>
+            <li><a href="#usecases">Cas d'usage</a></li>
+            <li><a href="#organisations">Offre Organisations</a></li>
+            <li><a href="https://github.com/abomed95/xeer-ai/releases" target="_blank" rel="noopener">Application Android</a></li>
+            <li><a href="/docs">Documentation de l'API</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col footer-contact">
+          <h3>Contact</h3>
+          <ul>
+            <li><a href="mailto:contact@xeer.ai">✉️ contact@xeer.ai</a></li>
+            <li><a href="#organisations">💼 Demander un devis</a></li>
+            <li><a href="/app.html">🔐 Espace client</a></li>
+            <li><a href="/admin.html">⚙️ Administration</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 Xeer AI — Préserver et transmettre le droit coutumier somali.</div>
+        <div class="legal">
+          <a href="#faq">Confidentialité</a>
+          <a href="#faq">Conditions d'utilisation</a>
+          <a href="#pricing">Remboursement</a>
+        </div>
+        <div class="footer-credit">Créé par <strong>AMD Digital</strong></div>
       </div>
     </footer>
   </div>
@@ -318,6 +638,36 @@
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+
+    /* --- Menu mobile --- */
+    const navToggle = document.getElementById("nav-toggle");
+    const navLinks = document.getElementById("nav-links");
+
+    function closeMenu() {
+      navLinks.classList.remove("open");
+      navToggle.setAttribute("aria-expanded", "false");
+      navToggle.setAttribute("aria-label", "Ouvrir le menu");
+    }
+
+    navToggle.addEventListener("click", () => {
+      const ouvert = navLinks.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", String(ouvert));
+      navToggle.setAttribute("aria-label", ouvert ? "Fermer le menu" : "Ouvrir le menu");
+    });
+
+    // Refermer après avoir choisi une destination, et à la touche Échap.
+    navLinks.addEventListener("click", (e) => {
+      if (e.target.closest("a")) closeMenu();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMenu();
+    });
+
+    /* --- Séparateur de l'en-tête au défilement --- */
+    const sticky = document.getElementById("nav-sticky");
+    const onScroll = () => sticky.classList.toggle("scrolled", window.scrollY > 8);
+    addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
   </script>
 </body>
 </html>

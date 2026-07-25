@@ -193,3 +193,4 @@ data/processed/
 *.log
 # Xeer AI
 xeer.db
+.model_cache/

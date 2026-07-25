@@ -27,6 +27,23 @@
 
 html, body { margin: 0; padding: 0; }
 
+html {
+  /* Empêche iOS d'agrandir arbitrairement le texte en paysage. */
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* Aucune page ne doit défiler horizontalement sur mobile. */
+body { overflow-x: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   font-family: var(--font);
   color: var(--text);
@@ -39,7 +56,16 @@ body {
   line-height: 1.55;
 }
 
-.container { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+.container {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  /* Encoches et coins arrondis des téléphones récents. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+@media (max-width: 560px) {
+  .container { width: calc(100% - 24px); }
+}
 
 /* --- Navigation --- */
 .nav {
@@ -81,6 +107,76 @@ body {
 }
 .nav-links a.link:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 
+/* --- En-tête collant + menu mobile (landing uniquement) --- */
+.nav-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(6, 17, 31, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+.nav-sticky.scrolled { border-bottom-color: var(--line2); }
+
+/* Bouton hamburger : masqué sur grand écran. */
+.nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  place-items: center;
+}
+.nav-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+.nav-toggle span::before,
+.nav-toggle span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform 0.2s ease;
+}
+.nav-toggle span::before { top: -6px; }
+.nav-toggle span::after { top: 6px; }
+.nav-toggle[aria-expanded="true"] span { background: transparent; }
+.nav-toggle[aria-expanded="true"] span::before { transform: translateY(6px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span::after { transform: translateY(-6px) rotate(-45deg); }
+
+@media (max-width: 860px) {
+  .nav { padding: 12px 0; }
+  .nav-toggle { display: grid; }
+  /* Le menu s'empile sous la barre plutôt que de la faire déborder. */
+  .nav-links {
+    display: none;
+    width: 100%;
+    order: 3;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px 0 6px;
+    border-top: 1px solid var(--line2);
+    margin-top: 10px;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a.link { padding: 12px 12px; font-size: 1rem; min-height: 44px; display: flex; align-items: center; }
+  .nav-links .btn { width: 100%; margin-top: 6px; }
+}
+
 /* --- Boutons --- */
 .btn {
   display: inline-flex;
@@ -112,6 +208,13 @@ body {
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line2); }
 .btn-sm { padding: 8px 14px; font-size: 0.85rem; border-radius: 10px; }
 .btn-block { width: 100%; }
+/* Un bouton doit rester confortable au doigt (repère d'accessibilité : 44 px). */
+.btn { min-height: 44px; }
+.btn-sm { min-height: 38px; }
+.btn:focus-visible, a:focus-visible, button:focus-visible, .input:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 2px;
+}
 
 /* --- Cartes / panneaux --- */
 .card {
@@ -255,4 +358,84 @@ table.data th {
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+}
+
+/* ============================================================
+   Pied de page complet (landing)
+   ============================================================ */
+.site-footer {
+  margin-top: 72px;
+  border-top: 1px solid var(--line2);
+  padding-top: 44px;
+  /* Barre de gestes iOS. */
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.footer-grid {
+  display: grid;
+  gap: 34px 26px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 700px) {
+  .footer-grid { grid-template-columns: 1.6fr 1fr 1fr; }
+}
+@media (min-width: 980px) {
+  .footer-grid { grid-template-columns: 1.8fr 1fr 1fr 1.2fr; }
+}
+.footer-about p { margin: 14px 0 0; max-width: 32rem; line-height: 1.65; }
+.footer-col h3 {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.footer-col ul { list-style: none; margin: 0; padding: 0; }
+.footer-col li { margin-bottom: 2px; }
+.footer-col a {
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* Cible tactile confortable dans une liste dense. */
+  min-height: 38px;
+  padding: 2px 0;
+  transition: color 0.15s ease;
+}
+.footer-col a:hover { color: var(--gold2); }
+.footer-langs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.footer-contact a { word-break: break-word; }
+
+.footer-bottom {
+  margin-top: 38px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px 20px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+}
+.footer-bottom .legal { display: flex; gap: 6px 16px; flex-wrap: wrap; }
+.footer-bottom .legal a { color: var(--muted); text-decoration: none; }
+.footer-bottom .legal a:hover { color: var(--gold2); }
+.footer-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(212, 175, 55, 0.07);
+  color: var(--text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.footer-credit strong { color: var(--gold2); }
+@media (max-width: 560px) {
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
 }

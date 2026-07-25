@@ -1,9 +1,23 @@
 """Configuration centrale de Xeer AI (variables d'environnement)."""
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# --- Cache des modèles d'embeddings ---
+# Par défaut, sentence-transformers télécharge son modèle (~470 Mo) depuis
+# HuggingFace au PREMIER usage. Sur un PaaS, cela signifie : première question
+# très lente, et dépendance à la disponibilité de HuggingFace en production.
+# On force donc le cache DANS le dossier de l'application, pour que le modèle
+# téléchargé pendant le build soit embarqué dans l'image d'exécution.
+# Chemin absolu calculé depuis ce fichier : indépendant du répertoire courant.
+MODEL_CACHE_DIR = os.getenv(
+    "XEER_MODEL_CACHE", str(Path(__file__).resolve().parent.parent / ".model_cache")
+)
+os.environ.setdefault("HF_HOME", MODEL_CACHE_DIR)
+os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE_DIR)
 
 # --- Général ---
 APP_NAME = "Xeer AI"
