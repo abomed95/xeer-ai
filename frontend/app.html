@@ -36,10 +36,37 @@
     .conv-item:hover .del { opacity: 1; }
     .conv-item .del:hover { color: var(--bad); }
     .sidebar-foot { padding: 12px 14px; border-top: 1px solid var(--line2); font-size: 0.78rem; color: var(--muted); }
+    .sidebar-legal { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 10px; }
+    .sidebar-legal a { color: var(--muted); text-decoration: none; font-size: 0.74rem; }
+    .sidebar-legal a:hover { color: var(--gold2); text-decoration: underline; }
+    .sidebar-credit { display: block; margin-top: 8px; font-size: 0.74rem; }
+    .sidebar-credit strong { color: var(--gold2); }
 
     @media (max-width: 760px) {
       .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 60; background: #081527; box-shadow: var(--shadow); }
       .sidebar.hidden { margin-left: -280px; }
+    }
+
+    /* Sur petit écran, la barre d'outils tenait sur trois lignes et mangeait
+       le fifth de la hauteur utile. Elle reste sur une seule ligne : libellés
+       raccourcis, boutons resserrés. */
+    @media (max-width: 640px) {
+      .app-nav { padding: 8px 12px; gap: 8px; flex-wrap: nowrap; }
+      .app-nav .brand { font-size: 0.98rem; }
+      .app-nav .brand-badge { width: 34px; height: 34px; border-radius: 11px; font-size: 1rem; }
+      .app-nav .nav-links { flex-wrap: nowrap; gap: 4px; }
+      .app-nav .nav-links .btn { min-height: 38px; padding: 7px 9px; }
+      .app-nav #plan-chip { font-size: 0.68rem; padding: 3px 8px; white-space: nowrap; }
+    }
+    @media (max-width: 480px) {
+      /* La pastille de plan fait doublon avec la note de quota sous le
+         composer : on la retire pour que la barre tienne sur une ligne. */
+      .app-nav #plan-chip { display: none; }
+      .app-nav .brand { font-size: 0; gap: 0; }
+      .app-nav .brand-badge { font-size: 1rem; }
+      /* Le libellé « PDF » est superflu à côté de son icône. */
+      .app-nav #btn-export { font-size: 0; gap: 0; }
+      .app-nav #btn-export svg { width: 16px; height: 16px; }
     }
 
     /* ---- Zone chat ---- */
@@ -126,7 +153,19 @@
       </button>
     </div>
     <div class="conv-list" id="conv-list"></div>
-    <div class="sidebar-foot">🗂 Vos conversations sont enregistrées et synchronisées sur tous vos appareils.</div>
+    <div class="sidebar-foot">
+      🗂 Vos conversations sont enregistrées et synchronisées sur tous vos appareils.
+      <!-- Les mentions doivent rester à portée de clic depuis l'espace client.
+           Elles vivent dans la barre latérale : le corps de cette page est une
+           rangée flex de hauteur fixe, un pied de page classique y casserait
+           la mise en page. -->
+      <nav class="sidebar-legal">
+        <a href="/conditions.html">Conditions</a>
+        <a href="/confidentialite.html">Confidentialité</a>
+        <a href="/mentions-legales.html">Mentions légales</a>
+      </nav>
+      <span class="sidebar-credit">Créé par <strong>AMD Digital</strong></span>
+    </div>
   </aside>
 
   <div class="app-shell">

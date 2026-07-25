@@ -160,11 +160,15 @@ body {
 .nav-toggle[aria-expanded="true"] span::before { transform: translateY(6px) rotate(45deg); }
 .nav-toggle[aria-expanded="true"] span::after { transform: translateY(-6px) rotate(-45deg); }
 
+/* Ces règles sont volontairement limitées à .nav-sticky, c'est-à-dire à la
+   landing et aux pages légales. L'espace client (app.html) réutilise la classe
+   .nav-links pour sa barre d'outils : l'empiler en colonne pleine largeur y
+   occuperait les deux tiers de l'écran. */
 @media (max-width: 860px) {
-  .nav { padding: 12px 0; }
-  .nav-toggle { display: grid; }
+  .nav-sticky .nav { padding: 12px 0; }
+  .nav-sticky .nav-toggle { display: grid; }
   /* Le menu s'empile sous la barre plutôt que de la faire déborder. */
-  .nav-links {
+  .nav-sticky .nav-links {
     display: none;
     width: 100%;
     order: 3;
@@ -175,9 +179,9 @@ body {
     border-top: 1px solid var(--line2);
     margin-top: 10px;
   }
-  .nav-links.open { display: flex; }
-  .nav-links a.link { padding: 12px 12px; font-size: 1rem; min-height: 44px; display: flex; align-items: center; }
-  .nav-links .btn { width: 100%; margin-top: 6px; }
+  .nav-sticky .nav-links.open { display: flex; }
+  .nav-sticky .nav-links a.link { padding: 12px 12px; font-size: 1rem; min-height: 44px; display: flex; align-items: center; }
+  .nav-sticky .nav-links .btn { width: 100%; margin-top: 6px; }
 }
 
 /* --- Boutons --- */
@@ -405,6 +409,59 @@ table.data th {
 .app-legal-credit { margin-left: auto; }
 .app-legal-credit strong { color: var(--gold2); }
 @media (max-width: 560px) { .app-legal-credit { margin-left: 0; } }
+
+/* ============================================================
+   Pages légales — mise en page de lecture longue
+   ============================================================ */
+.legal-page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 26px 0 20px;
+}
+.legal-page h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  letter-spacing: -0.02em;
+  margin: 18px 0 8px;
+  line-height: 1.15;
+}
+.legal-page .updated { color: var(--muted); font-size: 0.86rem; margin: 0 0 26px; }
+.legal-page h2 {
+  font-size: 1.12rem;
+  margin: 34px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line2);
+  letter-spacing: -0.01em;
+  scroll-margin-top: 86px;
+}
+.legal-page h3 { font-size: 0.98rem; margin: 22px 0 6px; color: var(--gold2); }
+.legal-page p, .legal-page li { color: #d7e0ec; line-height: 1.75; font-size: 0.95rem; }
+.legal-page ul { padding-left: 20px; margin: 10px 0; }
+.legal-page li { margin-bottom: 8px; }
+.legal-page li::marker { color: var(--gold); }
+.legal-page a { color: var(--gold2); }
+.legal-page table.data td, .legal-page table.data th { white-space: normal; vertical-align: top; }
+.legal-page .toc {
+  margin: 0 0 10px;
+  padding: 18px 22px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line2);
+}
+.legal-page .toc ol { margin: 8px 0 0; padding-left: 20px; }
+.legal-page .toc a { text-decoration: none; }
+.legal-page .toc a:hover { text-decoration: underline; }
+/* Encadré signalant une information que l'exploitant doit renseigner. */
+.todo-box {
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.09);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin: 20px 0;
+  font-size: 0.9rem;
+  color: #fde68a;
+}
+.todo-box strong { color: var(--warn); }
+.fill { color: var(--warn); font-weight: 700; }
 
 /* ============================================================
    Pages légales — mise en page de lecture longue
