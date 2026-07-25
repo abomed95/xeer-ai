@@ -119,6 +119,9 @@ body {
 }
 .nav-sticky.scrolled { border-bottom-color: var(--line2); }
 
+/* Barre simplifiée (pages légales) : reste en ligne, sans menu escamotable. */
+.nav-simple { display: flex; align-items: center; gap: 10px; }
+
 /* Bouton hamburger : masqué sur grand écran. */
 .nav-toggle {
   display: none;
@@ -225,6 +228,31 @@ body {
   padding: 26px;
 }
 .card h3 { margin-top: 0; }
+
+/* Léger relief au survol : réservé aux pointeurs fins, pour ne pas laisser un
+   état « collé » après un appui sur écran tactile. */
+@media (hover: hover) and (pointer: fine) {
+  .card-hover { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(212, 175, 55, 0.42);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42);
+  }
+}
+
+/* --- Apparition au défilement --- */
+/* L'effet n'est actif que si le script a ajouté la classe « js » : sans
+   JavaScript, le contenu reste visible. Un contenu masqué par une animation
+   qui ne se déclenche jamais serait un contenu perdu. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.js .reveal.visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+}
 
 /* --- Badges / puces --- */
 .badge {
@@ -360,6 +388,77 @@ table.data th {
   flex-wrap: wrap;
 }
 
+/* Bandeau légal discret de l'espace client. */
+.app-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 30px;
+  padding: 18px 0 calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line2);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.app-legal a { color: var(--muted); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+.app-legal a:hover { color: var(--gold2); }
+.app-legal-credit { margin-left: auto; }
+.app-legal-credit strong { color: var(--gold2); }
+@media (max-width: 560px) { .app-legal-credit { margin-left: 0; } }
+
+/* ============================================================
+   Pages légales — mise en page de lecture longue
+   ============================================================ */
+.legal-page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 26px 0 20px;
+}
+.legal-page h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  letter-spacing: -0.02em;
+  margin: 18px 0 8px;
+  line-height: 1.15;
+}
+.legal-page .updated { color: var(--muted); font-size: 0.86rem; margin: 0 0 26px; }
+.legal-page h2 {
+  font-size: 1.12rem;
+  margin: 34px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line2);
+  letter-spacing: -0.01em;
+  scroll-margin-top: 86px;
+}
+.legal-page h3 { font-size: 0.98rem; margin: 22px 0 6px; color: var(--gold2); }
+.legal-page p, .legal-page li { color: #d7e0ec; line-height: 1.75; font-size: 0.95rem; }
+.legal-page ul { padding-left: 20px; margin: 10px 0; }
+.legal-page li { margin-bottom: 8px; }
+.legal-page li::marker { color: var(--gold); }
+.legal-page a { color: var(--gold2); }
+.legal-page table.data td, .legal-page table.data th { white-space: normal; vertical-align: top; }
+.legal-page .toc {
+  margin: 0 0 10px;
+  padding: 18px 22px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line2);
+}
+.legal-page .toc ol { margin: 8px 0 0; padding-left: 20px; }
+.legal-page .toc a { text-decoration: none; }
+.legal-page .toc a:hover { text-decoration: underline; }
+/* Encadré signalant une information que l'exploitant doit renseigner. */
+.todo-box {
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.09);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin: 20px 0;
+  font-size: 0.9rem;
+  color: #fde68a;
+}
+.todo-box strong { color: var(--warn); }
+.fill { color: var(--warn); font-weight: 700; }
+
 /* ============================================================
    Pied de page complet (landing)
    ============================================================ */
@@ -377,11 +476,14 @@ table.data th {
   gap: 34px 26px;
   grid-template-columns: 1fr;
 }
-@media (min-width: 700px) {
-  .footer-grid { grid-template-columns: 1.6fr 1fr 1fr; }
+@media (min-width: 640px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  /* Le bloc de présentation occupe toute la largeur avant les colonnes. */
+  .footer-about { grid-column: 1 / -1; }
 }
-@media (min-width: 980px) {
-  .footer-grid { grid-template-columns: 1.8fr 1fr 1fr 1.2fr; }
+@media (min-width: 1000px) {
+  .footer-grid { grid-template-columns: 1.7fr 1fr 1fr 1fr 1.1fr; }
+  .footer-about { grid-column: auto; }
 }
 .footer-about p { margin: 14px 0 0; max-width: 32rem; line-height: 1.65; }
 .footer-col h3 {
