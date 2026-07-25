@@ -147,34 +147,150 @@ def build_context(results: list[dict[str, Any]]) -> str:
     return "\n\n".join(parts)
 
 
-SYSTEM_PROMPT = """
-Waxaad tahay khabiir ku takhasusay Xeer Ciise iyo dhaqanka Soomaaliyeed.
-You are an expert on Xeer Ciise, the Somali customary law tradition.
+# --------------------------------------------------------------------------
+# Langue de réponse
+# --------------------------------------------------------------------------
+# Les extraits fournis au modèle sont intégralement en somali. Une consigne
+# générale du type « réponds dans la langue de la question » ne suffit pas :
+# une question en français ou en anglais, écrite dans le même alphabet que le
+# somali, se fait aspirer par le contexte et reçoit une réponse en somali.
+# (L'arabe y échappait, son écriture étant distincte.)
+# La langue est donc déterminée ici, puis imposée nommément au modèle.
 
-Règles fondamentales :
-- Réponds UNIQUEMENT à partir des informations trouvées dans les sources fournies.
-- N'invente jamais rien qui ne figure pas dans les sources.
-- Tiens compte des questions et réponses précédentes pour comprendre le contexte.
-- Réponds toujours DANS LA LANGUE DE LA QUESTION : somali, arabe, français ou anglais.
+_ARABE_RE = re.compile(r"[؀-ۿ]")
 
-Structure de la réponse (3 parties, avec les titres dans la langue de la question) :
-1. 🔹 Définition — 1 à 2 lignes
-   (somali : Qeexid · arabe : التعريف · anglais : Definition)
-2. 🔹 Explication — développement concis
-   (somali : Sharaxaad · arabe : الشرح · anglais : Explanation)
-3. 🔹 Importance — pourquoi c'est important
-   (somali : Muhiimadda · arabe : الأهمية · anglais : Importance)
+# Mots-outils très fréquents et discriminants d'une langue à l'autre.
+_MARQUEURS = {
+    "so": {
+        "waa", "maxay", "waxa", "waxaa", "sidee", "yaa", "xeer", "xeerka",
+        "iyo", "oo", "ku", "ka", "uu", "ay", "aan", "doorka", "odayaasha",
+        "odayaal", "magta", "diya", "beesha", "sharci", "dhaqan", "muxuu",
+        "kuwa", "haddii", "loo", "laga", "yahay", "tahay",
+    },
+    "fr": {
+        "quel", "quelle", "quels", "quelles", "comment", "pourquoi", "est",
+        "sont", "que", "qu", "qui", "les", "des", "une", "dans", "le", "la",
+        "du", "au", "aux", "pour", "avec", "sur", "role", "rôle", "règlement",
+        "conflits", "droit", "coutumier", "explique", "signifie", "veut",
+        "dire", "peux", "peut", "quest", "combien", "lorsque",
+    },
+    "en": {
+        "what", "how", "why", "who", "when", "which", "the", "is", "are",
+        "does", "do", "of", "in", "role", "elders", "law", "customary",
+        "explain", "tell", "me", "about", "can", "you", "please", "and",
+        "dispute", "disputes", "resolve", "resolving", "meaning",
+    },
+}
+
+LANGUES = {
+    "so": "somali (Soomaali)",
+    "ar": "arabe (العربية)",
+    "fr": "français",
+    "en": "anglais (English)",
+}
+
+# Intitulés des trois sections, dans chaque langue.
+_TITRES = {
+    "so": ("Qeexid", "Sharaxaad", "Muhiimadda", "Xigasho"),
+    "ar": ("التعريف", "الشرح", "الأهمية", "المرجع"),
+    "fr": ("Définition", "Explication", "Importance", "Source"),
+    "en": ("Definition", "Explanation", "Importance", "Citation"),
+}
+
+# Consigne finale, rédigée DANS la langue cible : un modèle suit bien mieux une
+# instruction formulée dans la langue qu'on lui demande d'employer.
+_CONSIGNE = {
+    "so": "MUHIIM: jawaabta oo dhan ku qor AF-SOOMAALI oo keliya.",
+    "ar": "مهم: اكتب إجابتك بالكامل باللغة العربية فقط.",
+    "fr": "IMPORTANT : rédige la totalité de ta réponse en FRANÇAIS uniquement. "
+          "Les sources sont en somali, mais la réponse doit être en français.",
+    "en": "IMPORTANT: write your entire answer in ENGLISH only. "
+          "The sources are in Somali, but the answer must be in English.",
+}
+
+
+def detect_language(question: str) -> str | None:
+    """Langue de la question : 'so', 'ar', 'fr', 'en', ou None si indécidable.
+
+    None laisse le modèle décider seul, plutôt que de lui imposer une langue
+    erronée sur une question trop courte ou atypique.
+    """
+    if _ARABE_RE.search(question):
+        return "ar"
+
+    mots = set(re.findall(r"[a-zà-ÿ']+", question.lower()))
+    scores = {code: len(mots & marqueurs) for code, marqueurs in _MARQUEURS.items()}
+    meilleur = max(scores, key=scores.get)
+    if scores[meilleur] == 0:
+        return None
+    # Égalité entre deux langues : trop ambigu pour trancher.
+    if list(scores.values()).count(scores[meilleur]) > 1:
+        return None
+    return meilleur
+
+
+def build_system_prompt(langue: str | None) -> str:
+    """Consigne système, spécialisée pour la langue de réponse attendue."""
+    if langue:
+        definition, explication, importance, citation = _TITRES[langue]
+        regle_langue = (
+            f"- Rédige TOUTE ta réponse en {LANGUES[langue]}, sans exception, "
+            f"y compris les titres de sections.\n"
+            f"- Les sources sont en somali : tu dois les TRADUIRE et les "
+            f"synthétiser en {LANGUES[langue]}, jamais les recopier telles quelles."
+        )
+        structure = (
+            f"1. 🔹 {definition} — 1 à 2 lignes\n"
+            f"2. 🔹 {explication} — développement concis\n"
+            f"3. 🔹 {importance} — pourquoi c'est important"
+        )
+        fin = f"Termine par : 📌 {citation} : bogga XXX"
+    else:
+        regle_langue = (
+            "- Réponds dans la langue exacte de la question de l'utilisateur.\n"
+            "- Les sources sont en somali : traduis-les si la question est "
+            "posée dans une autre langue."
+        )
+        structure = (
+            "1. 🔹 Définition — 1 à 2 lignes\n"
+            "2. 🔹 Explication — développement concis\n"
+            "3. 🔹 Importance — pourquoi c'est important"
+        )
+        fin = "Termine par la citation de la page la plus pertinente : 📌 bogga XXX"
+
+    return f"""Tu es un expert du Xeer Ciise, le droit coutumier somali.
+
+Langue de la réponse :
+{regle_langue}
+
+Fidélité aux sources :
+- Réponds UNIQUEMENT à partir des extraits fournis.
+- N'invente jamais rien qui n'y figure pas.
+- Tiens compte des échanges précédents pour comprendre le contexte.
+
+Structure de la réponse, avec les titres dans la langue de réponse :
+{structure}
 
 Contraintes :
-- Si la question fait suite à une question précédente, relie naturellement la réponse.
-- Ne recopie pas le texte brut : synthétise et explique.
+- Synthétise, ne recopie pas le texte brut.
 - 6 à 10 lignes maximum.
-- Pour l'arabe, rédige en arabe standard moderne clair ; les termes somalis du
-  Xeer (odayaal, diya, xeer…) restent en somali, suivis d'une courte glose.
+- Les termes propres au Xeer (odayaal, magta, xeer…) restent en somali,
+  suivis d'une courte explication dans la langue de réponse.
 
-Termine toujours par la citation de la page la plus pertinente :
-📌 Xigasho / المرجع / Citation : bogga/page XXX
+{fin}
 """
+
+
+# Message affiché quand aucun extrait pertinent n'est trouvé, dans la langue
+# de la question : il était auparavant toujours en somali.
+_AUCUN_RESULTAT = {
+    "so": "Wax jawaab ku filan lagama helin xogta hadda la geliyey.",
+    "ar": "لم يتم العثور على معلومات كافية في المصادر المتاحة.",
+    "fr": "Aucune information suffisante n'a été trouvée dans le corpus pour "
+          "répondre à cette question.",
+    "en": "No sufficient information was found in the corpus to answer this "
+          "question.",
+}
 
 
 def generate_openai_answer(
@@ -182,35 +298,40 @@ def generate_openai_answer(
     results: list[dict[str, Any]],
     history: list[dict[str, str]],
 ) -> str:
+    langue = detect_language(question)
+
     if not results:
-        return "Wax jawaab ku filan lagama helin xogta hadda la geliyey."
+        return _AUCUN_RESULTAT.get(langue or "so", _AUCUN_RESULTAT["so"])
 
     load_dependencies()
     context = build_context(results)
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": build_system_prompt(langue)}]
     if history:
         messages.append({
             "role": "system",
-            "content": "Kuwani waa farriimihii ugu dambeeyey ee wada hadalka "
-                       "si aad u ilaaliso macnaha guud.",
+            "content": "Voici les derniers messages de la conversation, pour "
+                       "que tu conserves le contexte. Ils n'imposent pas la "
+                       "langue de ta réponse.",
         })
         messages.extend(history)
 
-    user_prompt = f"""
-Question actuelle :
+    rappel_langue = (
+        f"\n{_CONSIGNE[langue]}\n" if langue else
+        "\nRéponds dans la langue exacte de la question ci-dessus.\n"
+    )
+
+    user_prompt = f"""Question de l'utilisateur :
 {question}
 
-Sources :
+Extraits du corpus (en somali) :
 {context}
 
 Rappels :
-- Réponds dans la langue de la question (somali, arabe, français ou anglais)
-- Structure en 3 parties : Définition, Explication, Importance
-- Si la question fait suite à une question précédente, relie naturellement
-- Synthétise, n'invente rien hors des sources
+- Structure en 3 parties, titres dans la langue de réponse
+- Synthétise, n'invente rien hors des extraits
 - Termine par la citation de la page la plus pertinente
-"""
+{rappel_langue}"""
     messages.append({"role": "user", "content": user_prompt})
 
     try:
