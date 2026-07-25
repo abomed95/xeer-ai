@@ -7,15 +7,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Cache des modèles d'embeddings ---
-# Par défaut, sentence-transformers télécharge son modèle (~470 Mo) depuis
+# Par défaut, sentence-transformers télécharge son modèle (~460 Mo) depuis
 # HuggingFace au PREMIER usage. Sur un PaaS, cela signifie : première question
 # très lente, et dépendance à la disponibilité de HuggingFace en production.
 # On force donc le cache DANS le dossier de l'application, pour que le modèle
 # téléchargé pendant le build soit embarqué dans l'image d'exécution.
-# Chemin absolu calculé depuis ce fichier : indépendant du répertoire courant.
-MODEL_CACHE_DIR = os.getenv(
-    "XEER_MODEL_CACHE", str(Path(__file__).resolve().parent.parent / ".model_cache")
-)
+#
+# Chemin RELATIF au répertoire courant, résolu à l'exécution — et non calculé
+# depuis l'emplacement de ce fichier : le préfixe absolu du dossier applicatif
+# diffère entre le build et l'exécution sur App Platform, ce qui faisait manquer
+# le cache et retéléchargeait le modèle. C'est la même mécanique que
+# XEER_CHROMA_DIR, qui fonctionne pour cette raison.
+MODEL_CACHE_DIR = str(Path(os.getenv("XEER_MODEL_CACHE", ".model_cache")).resolve())
 os.environ.setdefault("HF_HOME", MODEL_CACHE_DIR)
 os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE_DIR)
 

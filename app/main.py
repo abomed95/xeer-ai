@@ -5,6 +5,7 @@ abonnements (Gratuit / Premium 10 $ / Organisation), paiements Waafi, CAC Bank
 et cartes Visa/MasterCard, et tableau de bord administrateur.
 """
 import secrets
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -81,6 +82,14 @@ def startup_event():
     seed_admin()
     print(f"[Xeer AI] Base de données : {database.backend_name()}")
 
+    # Préchauffage du moteur RAG dans un fil séparé : le serveur répond
+    # immédiatement (le health check ne doit pas attendre), et le premier client
+    # ne paie pas le chargement du modèle d'embeddings.
+    if not config.DEMO_MODE:
+        from app.services import rag
+
+        threading.Thread(target=rag.warm, name="rag-warmup", daemon=True).start()
+
 
 @app.get("/api/health")
 def health():
@@ -100,6 +109,8 @@ def health():
         "llm_model": config.OPENAI_MODEL,
         "openai_key_set": bool(config.OPENAI_API_KEY),
         "rag_ready": rag.index_ready(),
+        "embed_model_cached": rag.model_cached(),
+        "embed_model_loaded": rag.model_loaded(),
         "database": database.backend_name(),
         "persistent_storage": database.IS_POSTGRES,
     }
