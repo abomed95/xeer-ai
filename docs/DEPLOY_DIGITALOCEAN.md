@@ -124,8 +124,36 @@ chiffrées, les identifiants du ou des fournisseurs utilisés :
 - **CAC Bank** : `CACBANK_API_URL`, `CACBANK_MERCHANT_ID`, `CACBANK_API_KEY`
 - **Visa / MasterCard** : `CARD_GATEWAY_SECRET_KEY`
 
+### ⚠️ Secrets de signature des webhooks — obligatoires en live
+
+Chaque fournisseur signe ses callbacks. Sans le secret correspondant, l'API
+**refuse** les callbacks en mode live (erreur 503) : c'est volontaire. Un
+callback non vérifié permettrait à un client de poster la référence obtenue à
+son checkout et d'activer Premium **sans payer**.
+
+| Variable | Fournisseur | En-tête vérifié |
+|---|---|---|
+| `WAAFI_WEBHOOK_SECRET` | WaafiPay | `X-Waafi-Signature` |
+| `CACBANK_WEBHOOK_SECRET` | CAC Bank | `X-Cac-Signature` |
+| `CARD_WEBHOOK_SECRET` | Carte (format Stripe) | `Stripe-Signature` |
+
+Récupère ces valeurs dans le tableau de bord de chaque fournisseur
+(« webhook signing secret ») et déclare-les comme variables **chiffrées**.
+
 Teste chaque moyen de paiement avec un petit montant réel avant l'ouverture
 commerciale.
+
+## Lancer les tests
+
+```bash
+pip install pytest
+pytest                                        # sur SQLite
+DATABASE_URL=postgresql://... pytest          # sur PostgreSQL (comme en prod)
+```
+
+44 tests couvrent le parcours client (comptes, chat, quotas, paiement, admin),
+les signatures de webhook, la limitation de débit et les garde-fous de
+production. Lance-les avant chaque déploiement.
 
 ## Coût indicatif
 

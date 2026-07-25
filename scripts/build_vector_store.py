@@ -13,6 +13,15 @@ MIN_PAR_LEN = 40
 MAX_CHUNK_LEN = 900
 MIN_CHUNK_LEN = 120
 
+# Seuils de détection du bruit d'OCR, appliqués PARAGRAPHE PAR PARAGRAPHE.
+# Filtrer après fusion faisait perdre des blocs entiers de contenu légitime dès
+# qu'un seul fragment illisible s'y trouvait (38 % du livre était écarté).
+ALPHA_RATIO_MIN = 0.45      # part minimale de lettres
+SYMBOL_DENSITY_MAX = 0.04   # densité maximale de symboles parasites
+SHORT_WORD_RATIO_MAX = 0.5  # part maximale de « mots » de 1-2 caractères
+
+SYMBOL_RE = re.compile(r"[#@_=<>\\/\[\]\{\}\|]")
+
 
 def clean_text(text: str) -> str:
     text = text.replace("\x0c", " ")
@@ -21,30 +30,41 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
-def is_noisy(text: str) -> bool:
-    if len(text.strip()) < MIN_CHUNK_LEN:
+def is_noisy_paragraph(text: str) -> bool:
+    """Vrai si le paragraphe est du bruit d'OCR plutôt que du texte.
+
+    Ne juge PAS la longueur au-delà du minimum de paragraphe : un titre de
+    chapitre court est du contenu légitime, il sera fusionné avec la suite.
+    """
+    stripped = text.strip()
+    if len(stripped) < MIN_PAR_LEN:
         return True
 
-    letters = sum(c.isalpha() for c in text)
-    total = len(text)
-    if total == 0:
+    if sum(c.isalpha() for c in stripped) / len(stripped) < ALPHA_RATIO_MIN:
         return True
 
-    alpha_ratio = letters / total
-    if alpha_ratio < 0.45:
+    if len(SYMBOL_RE.findall(stripped)) / len(stripped) > SYMBOL_DENSITY_MAX:
         return True
 
-    weird = len(re.findall(r"[#@_=<>\\/\[\]\{\}\|]", text))
-    if weird > 8:
+    # Le charabia d'OCR se reconnaît surtout à une majorité de lettres isolées
+    # (« i” i if 4 ' II E I ] iq i! ») : du somali réel a des mots normaux.
+    words = stripped.split()
+    if words and sum(1 for w in words if len(w) <= 2) / len(words) > SHORT_WORD_RATIO_MAX:
         return True
 
     return False
 
 
+def is_noisy(text: str) -> bool:
+    """Contrôle final d'un bloc déjà constitué : longueur utile suffisante."""
+    return len(text.strip()) < MIN_CHUNK_LEN
+
+
 def split_paragraphs(text: str):
+    """Découpe en paragraphes et écarte immédiatement ceux qui sont du bruit."""
     text = clean_text(text)
     parts = re.split(r"\n\s*\n", text)
-    return [p.strip() for p in parts if len(p.strip()) >= MIN_PAR_LEN]
+    return [p.strip() for p in parts if not is_noisy_paragraph(p)]
 
 
 def merge_paragraphs(paragraphs, max_len=MAX_CHUNK_LEN):

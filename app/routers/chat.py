@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app import config
 from app.deps import get_current_user
+from app.ratelimit import rate_limit_user
 from app.schemas import AskRequest, AskResponse, FeedbackRequest, SourceItem
 from app.services import conversations, rag
 from app.services.accounts import log_question, questions_used_this_month, quota_for
@@ -11,7 +12,12 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
 @router.post("/ask", response_model=AskResponse)
-def ask_question(payload: AskRequest, user: dict = Depends(get_current_user)):
+def ask_question(
+    payload: AskRequest,
+    # Chaque question consomme des crédits OpenAI : on plafonne le débit par
+    # utilisateur (le quota mensuel ne protège pas les comptes illimités).
+    user: dict = Depends(rate_limit_user("ask", limit=20, window_seconds=60)),
+):
     question = payload.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question vide.")

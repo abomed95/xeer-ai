@@ -1,15 +1,17 @@
 """Routes de facturation : plans, checkout, confirmation, offres organisation."""
+import json
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app import config
 from app.database import get_db, utcnow
 from app.deps import get_current_user
+from app.ratelimit import rate_limit
 from app.schemas import CheckoutRequest, ConfirmPaymentRequest, OrgLeadRequest
 from app.services.accounts import user_out
-from app.services.payments import PROVIDER_INFO, get_provider
+from app.services.payments import PROVIDER_INFO, get_provider, webhooks
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -61,7 +63,11 @@ def list_plans():
     }
 
 
-@router.post("/checkout")
+@router.post(
+    "/checkout",
+    # Évite la création en rafale de paiements en attente.
+    dependencies=[Depends(rate_limit("checkout", limit=10, window_seconds=600))],
+)
 def checkout(payload: CheckoutRequest, user: dict = Depends(get_current_user)):
     if payload.plan != "premium":
         raise HTTPException(
@@ -161,16 +167,36 @@ def confirm_payment(payload: ConfirmPaymentRequest, user: dict = Depends(get_cur
     }
 
 
-@router.post("/webhook/{provider_id}")
-def payment_webhook(provider_id: str, payload: dict):
+@router.post(
+    "/webhook/{provider_id}",
+    # Endpoint public : borne les tentatives de signatures forgées.
+    dependencies=[Depends(rate_limit("webhook", limit=120, window_seconds=60))],
+)
+async def payment_webhook(provider_id: str, request: Request):
     """Callback serveur-à-serveur des fournisseurs (mode live).
 
-    Chaque fournisseur envoie sa référence de transaction ; le paiement
-    correspondant est complété et l'abonnement activé.
+    La signature du fournisseur est vérifiée AVANT tout traitement : sans cela,
+    n'importe qui pourrait activer un abonnement en postant la référence d'un
+    paiement en attente (référence que le client obtient à son checkout).
     """
+    if provider_id not in webhooks.PROVIDERS:
+        raise HTTPException(status_code=404, detail="Fournisseur inconnu.")
+
+    # Le corps brut est nécessaire : la signature porte sur les octets exacts.
+    raw_body = await request.body()
+    webhooks.verify(provider_id, raw_body, request.headers)
+
+    try:
+        payload = json.loads(raw_body or b"{}")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Corps JSON invalide.")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Corps JSON invalide.")
+
+    metadata = payload.get("metadata")
     reference = (payload.get("reference")
                  or payload.get("referenceId")
-                 or payload.get("metadata", {}).get("reference"))
+                 or (metadata.get("reference") if isinstance(metadata, dict) else None))
     if not reference:
         raise HTTPException(status_code=400, detail="Référence manquante.")
 
@@ -200,7 +226,11 @@ def payment_history(user: dict = Depends(get_current_user)):
     return {"payments": [dict(r) for r in rows]}
 
 
-@router.post("/org-lead")
+@router.post(
+    "/org-lead",
+    # Formulaire public sans authentification : limite le spam commercial.
+    dependencies=[Depends(rate_limit("org_lead", limit=5, window_seconds=3600))],
+)
 def create_org_lead(payload: OrgLeadRequest):
     """Demande de devis Organisation (prix négociable) — accessible sans compte."""
     with get_db() as db:
