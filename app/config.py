@@ -16,10 +16,8 @@ DATABASE_PATH = os.getenv("XEER_DATABASE_PATH", "xeer.db")
 # complète sans clé API ni index vectoriel). Auto-activé quand aucune clé
 # OpenAI n'est configurée, pour qu'un déploiement de démonstration fonctionne
 # toujours (chat simulé, aucune dépendance lourde requise).
-DEMO_MODE = (
-    os.getenv("XEER_DEMO_MODE", "0") == "1"
-    or not os.getenv("OPENAI_API_KEY", "").strip()
-)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+DEMO_MODE = os.getenv("XEER_DEMO_MODE", "0") == "1" or not OPENAI_API_KEY
 
 # --- RAG / LLM ---
 DB_DIR = os.getenv("XEER_CHROMA_DIR", "chroma_db")

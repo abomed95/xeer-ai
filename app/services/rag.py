@@ -15,9 +15,19 @@ _collection = None
 _openai_client = None
 
 
+def index_ready() -> bool:
+    """Vrai si un index vectoriel semble présent sur disque (contrôle léger).
+
+    Volontairement sans import de chromadb : sert au diagnostic /api/health.
+    """
+    from pathlib import Path
+
+    db_dir = Path(config.DB_DIR)
+    return db_dir.is_dir() and any(db_dir.iterdir())
+
+
 def load_dependencies():
     global _embed_model, _client_db, _collection, _openai_client
-    import os
 
     import chromadb
     from openai import OpenAI
@@ -39,10 +49,12 @@ def load_dependencies():
             ) from exc
 
     if _openai_client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY introuvable dans .env")
-        _openai_client = OpenAI(api_key=api_key)
+        if not config.OPENAI_API_KEY:
+            raise RuntimeError(
+                "OPENAI_API_KEY manquante. En local : renseigne-la dans .env. "
+                "Sur DigitalOcean : App → Settings → Environment Variables."
+            )
+        _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 
 def is_bad_result(text: str) -> bool:

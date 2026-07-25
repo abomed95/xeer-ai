@@ -1,19 +1,24 @@
-# Spec DigitalOcean App Platform — déploiement de Xeer AI.
+# Spec DigitalOcean App Platform — Xeer AI en MODE COMPLET (vraie IA OpenAI + RAG).
 #
 # Déploiement en 1 clic :
 #   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main
 #
-# Par défaut : MODE DÉMO (comptes, quotas, paiements sandbox et admin, sans clé
-# OpenAI ni index vectoriel). Build léger via requirements-demo.txt (tient dans
-# une instance basic 512 Mo).
+# Ce que fait cette spec :
+#   • installe les dépendances complètes (ChromaDB, Sentence Transformers, openai) ;
+#   • CONSTRUIT l'index vectoriel au build depuis data/pages/clean (131 pages
+#     versionnées) — sans quoi le RAG répondrait « collection introuvable » ;
+#   • lance l'API avec XEER_DEMO_MODE=0, donc réponses générées par OpenAI.
 #
-# ── Passer en MODE COMPLET (vraie IA OpenAI + RAG) ─────────────────────────
-#   1. build_command : pip install -r requirements.txt   (index vectoriel requis)
-#   2. XEER_DEMO_MODE : "0"
-#   3. Ajoute le secret OPENAI_API_KEY (dashboard DO → Settings → App-Level Env)
-#      avec une clé OpenAI valide, et vérifie OPENAI_MODEL (modèle réel).
-#   4. instance_size_slug : au moins basic-xs (le RAG charge des modèles lourds).
-name: xeer-ai-demo
+# ⚠️ SEULE ÉTAPE MANUELLE — la clé OpenAI (jamais committée dans ce dépôt) :
+#   Dashboard DO → ton app → Settings → App-Level Environment Variables
+#     key   = OPENAI_API_KEY
+#     value = sk-...        (coche « Encrypt » pour en faire un secret)
+#   Puis « Save » : DigitalOcean redéploie et l'IA réelle est active.
+#
+# Filet de sécurité : sans clé valide, l'app ne plante pas — elle retombe
+# automatiquement en réponses de démonstration (voir app/config.py). Vérifie
+# l'état à tout moment sur /api/health (champs demo_mode et rag_ready).
+name: xeer-ai-demo   # nom conservé : le changer créerait une nouvelle app sur DO
 region: fra   # Francfort (proche Djibouti/Europe) — change si besoin
 services:
   - name: web
@@ -22,16 +27,25 @@ services:
       branch: main
       deploy_on_push: true
     environment_slug: python
-    build_command: pip install -r requirements-demo.txt
+    # Torch en version CPU d'abord : ~5x plus léger que la version CUDA par
+    # défaut, indispensable pour tenir dans le build DigitalOcean.
+    build_command: |
+      pip install --upgrade pip
+      pip install torch --index-url https://download.pytorch.org/whl/cpu
+      pip install -r requirements.txt
+      python scripts/build_vector_store.py
     run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    instance_size_slug: basic-xxs   # ~5 $/mois (App Platform n'a pas de tier gratuit pour les services)
+    # Le RAG charge un modèle d'embeddings multilingue en mémoire : 512 Mo
+    # (basic-xxs) ne suffisent pas — basic-s (2 Go) est le palier confortable.
+    instance_size_slug: basic-s
     instance_count: 1
     http_port: 8080
     health_check:
-      http_path: /
+      http_path: /api/health
     envs:
+      # Mode complet : réponses générées par l'API OpenAI sur la base du corpus.
       - key: XEER_DEMO_MODE
-        value: "1"
+        value: "0"
       - key: XEER_PAYMENTS_MODE
         value: sandbox
       - key: XEER_SECRET_KEY
@@ -44,12 +58,11 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: xeer-demo-2026
-      # Modèle OpenAI réel (utilisé uniquement en mode complet, XEER_DEMO_MODE=0).
+      # Modèle OpenAI réel (gpt-4o pour une qualité supérieure).
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-      # En mode complet, ajoute aussi le secret OPENAI_API_KEY depuis le
-      # dashboard DigitalOcean (ne jamais committer une vraie clé ici) :
-      # - key: OPENAI_API_KEY
-      #   scope: RUN_TIME
-      #   type: SECRET
-      #   value: sk-...
+      # Emplacement de l'index vectoriel construit au build.
+      - key: XEER_CHROMA_DIR
+        value: chroma_db
+      # OPENAI_API_KEY : à ajouter depuis le dashboard DigitalOcean (voir en-tête).
+      # Ne jamais committer une vraie clé dans ce fichier.

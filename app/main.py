@@ -68,6 +68,13 @@ def startup_event():
 
 @app.get("/api/health")
 def health():
+    """État de l'API — sert aussi de health check DigitalOcean.
+
+    `demo_mode: false` + `openai_key_set` + `rag_ready` tous vrais = mode
+    complet réellement actif (vraie IA sur le corpus indexé).
+    """
+    from app.services import rag
+
     return {
         "status": "ok",
         "app": config.APP_NAME,
@@ -75,6 +82,8 @@ def health():
         "demo_mode": config.DEMO_MODE,
         "payments_mode": config.PAYMENTS_MODE,
         "llm_model": config.OPENAI_MODEL,
+        "openai_key_set": bool(config.OPENAI_API_KEY),
+        "rag_ready": rag.index_ready(),
     }
 
 

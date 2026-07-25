@@ -6,21 +6,38 @@ Assistant IA du **Xeer Ciise** (droit coutumier somali) — plateforme SaaS
 complète : application web moderne (PWA installable + APK Android), comptes
 utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
-## Démo en ligne
+## Déploiement en ligne
 
-Déploiement « un clic » en **mode démo** (aucune clé OpenAI requise) :
+### DigitalOcean App Platform — **mode complet (vraie IA)**
 
-**DigitalOcean App Platform** — [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
-(spec : [`.do/app.yaml`](.do/app.yaml)). DigitalOcean lit le spec, construit
-l'app et te fournit l'URL publique.
+[Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
+(spec : [`.do/app.yaml`](.do/app.yaml))
 
-**Render** — [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+Le spec est configuré en **mode complet** : dépendances RAG complètes, **index
+vectoriel construit automatiquement au build** depuis `data/pages/clean`, et
+`XEER_DEMO_MODE=0`. Une seule étape manuelle, la clé OpenAI (jamais committée) :
+
+> Dashboard DO → ton app → **Settings** → **App-Level Environment Variables**
+> → `OPENAI_API_KEY` = `sk-...` (coche **Encrypt**) → **Save**.
+> DigitalOcean redéploie, l'IA réelle est active.
+
+Vérifie l'état sur **`/api/health`** : mode complet actif quand
+`demo_mode: false`, `openai_key_set: true` et `rag_ready: true`.
+
+Sans clé valide, l'app **ne plante pas** : elle retombe automatiquement en
+réponses de démonstration.
+
+### Render — **mode démo** (aucune clé requise)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 (spec : [`render.yaml`](render.yaml)). Colle l'URL du dépôt sur
-https://render.com/deploy.
-
-Les deux lancent toute la plateforme (comptes, quotas, paiements sandbox, admin)
-sans clé ni index vectoriel, via le build léger
+https://render.com/deploy. Lance toute la plateforme (comptes, quotas, paiements
+sandbox, admin) sans clé ni index vectoriel, via le build léger
 [`requirements-demo.txt`](requirements-demo.txt).
+
+> ⚠️ Sur App Platform, la base SQLite (`xeer.db`) est **éphémère** : comptes et
+> paiements sont réinitialisés à chaque redéploiement. Pour de la vraie
+> production, branche une base managée (Postgres) via `XEER_DATABASE_PATH`.
 
 ## Utilisation de Codex & GPT-4o (OpenAI Build Week)
 
