@@ -8,24 +8,36 @@ utilisateurs, abonnements, paiements et tableau de bord administrateur.
 
 ## Déploiement en ligne
 
-### DigitalOcean App Platform — **mode complet (vraie IA)**
+### DigitalOcean App Platform — **production**
 
 [Déployer sur DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main)
-(spec : [`.do/app.yaml`](.do/app.yaml))
+(spec : [`.do/app.yaml`](.do/app.yaml) · **procédure détaillée :
+[`docs/DEPLOY_DIGITALOCEAN.md`](docs/DEPLOY_DIGITALOCEAN.md)**)
 
-Le spec est configuré en **mode complet** : dépendances RAG complètes, **index
-vectoriel construit automatiquement au build** depuis `data/pages/clean`, et
-`XEER_DEMO_MODE=0`. Une seule étape manuelle, la clé OpenAI (jamais committée) :
+La spec déploie la plateforme en conditions réelles :
 
-> Dashboard DO → ton app → **Settings** → **App-Level Environment Variables**
-> → `OPENAI_API_KEY` = `sk-...` (coche **Encrypt**) → **Save**.
-> DigitalOcean redéploie, l'IA réelle est active.
+- **IA réelle** — génération OpenAI, `XEER_DEMO_MODE=0` ;
+- **index vectoriel construit au build** depuis `data/pages/clean` (131 pages) ;
+- **base PostgreSQL managée** — comptes, paiements et historiques survivent aux
+  redéploiements (le disque d'App Platform est éphémère).
 
-Vérifie l'état sur **`/api/health`** : mode complet actif quand
-`demo_mode: false`, `openai_key_set: true` et `rag_ready: true`.
+Deux secrets à créer dans le dashboard (jamais committés) : `OPENAI_API_KEY` et
+`XEER_SECRET_KEY`. Vérifie ensuite **`/api/health`** :
 
-Sans clé valide, l'app **ne plante pas** : elle retombe automatiquement en
-réponses de démonstration.
+```json
+{ "demo_mode": false, "openai_key_set": true, "rag_ready": true,
+  "database": "postgresql", "persistent_storage": true }
+```
+
+> App Platform applique la spec **stockée chez DigitalOcean**, pas le fichier du
+> dépôt : un `git push` met à jour le code mais pas la configuration. Applique la
+> spec une fois via `doctl apps update <APP_ID> --spec .do/app.yaml` (ou par le
+> dashboard) — voir [`docs/DEPLOY_DIGITALOCEAN.md`](docs/DEPLOY_DIGITALOCEAN.md).
+
+**Sécurité au démarrage** : l'API refuse de démarrer en production si
+`XEER_SECRET_KEY` garde sa valeur par défaut (jetons admin forgeables) ou si le
+mot de passe admin est celui de la démo. Sans clé OpenAI valide, elle ne plante
+pas : elle retombe en réponses de démonstration.
 
 ### Render — **mode démo** (aucune clé requise)
 
@@ -35,9 +47,9 @@ https://render.com/deploy. Lance toute la plateforme (comptes, quotas, paiements
 sandbox, admin) sans clé ni index vectoriel, via le build léger
 [`requirements-demo.txt`](requirements-demo.txt).
 
-> ⚠️ Sur App Platform, la base SQLite (`xeer.db`) est **éphémère** : comptes et
-> paiements sont réinitialisés à chaque redéploiement. Pour de la vraie
-> production, branche une base managée (Postgres) via `XEER_DATABASE_PATH`.
+> Le déploiement Render reste en SQLite éphémère : c'est une vitrine, pas une
+> production. Pour de vrais clients, utilise la spec DigitalOcean ci-dessus
+> (PostgreSQL managé).
 
 ## Utilisation de Codex & GPT-4o (OpenAI Build Week)
 

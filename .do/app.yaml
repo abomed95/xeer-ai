@@ -1,4 +1,4 @@
-# Spec DigitalOcean App Platform — Xeer AI en MODE COMPLET (vraie IA OpenAI + RAG).
+# Spec DigitalOcean App Platform — Xeer AI en PRODUCTION.
 #
 # Déploiement en 1 clic :
 #   https://cloud.digitalocean.com/apps/new?repo=https://github.com/abomed95/xeer-ai/tree/main
@@ -7,19 +7,43 @@
 #   • installe les dépendances complètes (ChromaDB, Sentence Transformers, openai) ;
 #   • CONSTRUIT l'index vectoriel au build depuis data/pages/clean (131 pages
 #     versionnées) — sans quoi le RAG répondrait « collection introuvable » ;
-#   • lance l'API avec XEER_DEMO_MODE=0, donc réponses générées par OpenAI.
+#   • provisionne une base PostgreSQL managée : comptes clients, paiements et
+#     historiques SURVIVENT aux redéploiements (le disque d'App Platform est
+#     éphémère : sans base managée, tout serait perdu à chaque déploiement) ;
+#   • lance l'API en mode complet, réponses générées par OpenAI.
 #
-# ⚠️ SEULE ÉTAPE MANUELLE — la clé OpenAI (jamais committée dans ce dépôt) :
-#   Dashboard DO → ton app → Settings → App-Level Environment Variables
-#     key   = OPENAI_API_KEY
-#     value = sk-...        (coche « Encrypt » pour en faire un secret)
-#   Puis « Save » : DigitalOcean redéploie et l'IA réelle est active.
+# ⚠️ AUCUN SECRET N'EST STOCKÉ DANS CE FICHIER — il est public sur GitHub.
+#    Les deux variables ci-dessous sont à créer dans le dashboard DigitalOcean :
+#      ton app → Settings → App-Level Environment Variables → Edit
 #
-# Filet de sécurité : sans clé valide, l'app ne plante pas — elle retombe
-# automatiquement en réponses de démonstration (voir app/config.py). Vérifie
-# l'état à tout moment sur /api/health (champs demo_mode et rag_ready).
-name: xeer-ai-demo   # nom conservé : le changer créerait une nouvelle app sur DO
+#      1. OPENAI_API_KEY   = sk-...                     (coche « Encrypt »)
+#      2. XEER_SECRET_KEY  = une longue chaîne aléatoire (coche « Encrypt »)
+#         Génère-la avec :
+#           python -c "import secrets; print(secrets.token_urlsafe(48))"
+#
+#    Sans XEER_SECRET_KEY, l'API REFUSE de démarrer en production : avec une
+#    valeur connue, n'importe qui pourrait forger un jeton d'administrateur.
+#
+# Mot de passe administrateur : laissé non défini volontairement. Au premier
+# démarrage, un mot de passe aléatoire est généré et affiché dans les logs DO
+# (Runtime Logs). Récupère-le, connecte-toi sur /admin.html, puis change-le.
+# Tu peux aussi définir XEER_ADMIN_PASSWORD (chiffré) dans le dashboard.
+#
+# Vérification après déploiement — GET /api/health doit renvoyer :
+#   demo_mode: false · openai_key_set: true · rag_ready: true
+#   database: "postgresql" · persistent_storage: true
+name: xeer-ai   # ⚠️ renommer ce champ sur une app existante en crée une nouvelle
 region: fra   # Francfort (proche Djibouti/Europe) — change si besoin
+
+databases:
+  # Base PostgreSQL managée, sauvegardée par DigitalOcean.
+  # production: false = base de développement (~7 $/mois), suffisante pour
+  # démarrer. Passe à true (+ size/num_nodes) pour un cluster haute dispo.
+  - name: db
+    engine: PG
+    version: "16"
+    production: false
+
 services:
   - name: web
     github:
@@ -46,23 +70,21 @@ services:
       # Mode complet : réponses générées par l'API OpenAI sur la base du corpus.
       - key: XEER_DEMO_MODE
         value: "0"
-      - key: XEER_PAYMENTS_MODE
-        value: sandbox
-      - key: XEER_SECRET_KEY
+      # Connexion à la base managée, injectée automatiquement par DigitalOcean.
+      - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
-        value: "change-me-en-une-longue-chaine-aleatoire"
-      - key: XEER_ADMIN_EMAIL
-        value: admin@xeer.ai
-      - key: XEER_ADMIN_PASSWORD
-        scope: RUN_TIME
-        type: SECRET
-        value: xeer-demo-2026
+        value: ${db.DATABASE_URL}
       # Modèle OpenAI réel (gpt-4o pour une qualité supérieure).
       - key: OPENAI_MODEL
         value: gpt-4o-mini
       # Emplacement de l'index vectoriel construit au build.
       - key: XEER_CHROMA_DIR
         value: chroma_db
-      # OPENAI_API_KEY : à ajouter depuis le dashboard DigitalOcean (voir en-tête).
-      # Ne jamais committer une vraie clé dans ce fichier.
+      - key: XEER_ADMIN_EMAIL
+        value: admin@xeer.ai
+      # Paiements simulés. Passe à "live" avec tes identifiants marchands
+      # (WAAFI_*, CACBANK_*, CARD_GATEWAY_*) pour encaisser réellement.
+      - key: XEER_PAYMENTS_MODE
+        value: sandbox
+      # OPENAI_API_KEY et XEER_SECRET_KEY : à créer dans le dashboard (voir
+      # l'en-tête). Ne jamais committer de secret dans ce fichier.

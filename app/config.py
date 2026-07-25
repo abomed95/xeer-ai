@@ -8,8 +8,17 @@ load_dotenv()
 # --- Général ---
 APP_NAME = "Xeer AI"
 APP_VERSION = "4.2.0"
-SECRET_KEY = os.getenv("XEER_SECRET_KEY", "change-me-in-production")
+
+# Clé de signature des jetons d'authentification. Avec la valeur par défaut,
+# n'importe qui peut forger un jeton (y compris admin) : elle est donc refusée
+# en production (voir check_production_config).
+DEFAULT_SECRET_KEY = "change-me-in-production"
+SECRET_KEY = os.getenv("XEER_SECRET_KEY", DEFAULT_SECRET_KEY)
 TOKEN_TTL_HOURS = int(os.getenv("XEER_TOKEN_TTL_HOURS", "72"))
+
+# Stockage : PostgreSQL si DATABASE_URL est fourni (base managée = données
+# persistantes), sinon fichier SQLite local.
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 DATABASE_PATH = os.getenv("XEER_DATABASE_PATH", "xeer.db")
 
 # Mode démo : /ask répond sans RAG ni OpenAI (utile pour tester l'app
@@ -77,3 +86,56 @@ CACBANK_API_KEY = os.getenv("CACBANK_API_KEY", "")
 # Cartes Visa / MasterCard (passerelle compatible Stripe)
 CARD_GATEWAY_API_URL = os.getenv("CARD_GATEWAY_API_URL", "https://api.stripe.com/v1")
 CARD_GATEWAY_SECRET_KEY = os.getenv("CARD_GATEWAY_SECRET_KEY", "")
+
+# --- Contrôles de sécurité au démarrage ---
+
+
+def check_production_config() -> list[str]:
+    """Vérifie la configuration de production. Lève si elle n'est pas sûre.
+
+    Renvoie la liste des avertissements non bloquants. Ces contrôles évitent de
+    mettre en ligne une plateforme facturant de vrais clients avec des secrets
+    connus publiquement.
+    """
+    warnings: list[str] = []
+
+    if DEMO_MODE:
+        # Déploiement de démonstration : on informe sans bloquer.
+        if SECRET_KEY == DEFAULT_SECRET_KEY:
+            warnings.append(
+                "XEER_SECRET_KEY non définie (valeur par défaut) — acceptable "
+                "en démo, jamais en production."
+            )
+        return warnings
+
+    # --- Production (une clé OpenAI est configurée) ---
+    if SECRET_KEY == DEFAULT_SECRET_KEY:
+        raise RuntimeError(
+            "XEER_SECRET_KEY utilise la valeur par défaut : les jetons "
+            "d'authentification seraient forgeables par n'importe qui, y compris "
+            "en tant qu'administrateur. Définis une longue chaîne aléatoire, "
+            "p.ex. :  python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        )
+    if len(SECRET_KEY) < 32:
+        raise RuntimeError(
+            "XEER_SECRET_KEY trop courte (< 32 caractères) pour signer des "
+            "jetons en production. Génère-en une longue et aléatoire."
+        )
+    if ADMIN_PASSWORD and ADMIN_PASSWORD == DEMO_ADMIN_PASSWORD:
+        raise RuntimeError(
+            f"XEER_ADMIN_PASSWORD vaut le mot de passe de démonstration "
+            f"('{DEMO_ADMIN_PASSWORD}'), connu publiquement. Change-le avant "
+            "d'ouvrir la plateforme à de vrais clients."
+        )
+    if not DATABASE_URL:
+        warnings.append(
+            "DATABASE_URL non définie : stockage SQLite local. Sur un PaaS, le "
+            "disque est éphémère — comptes et paiements seront perdus au "
+            "redéploiement. Branche une base PostgreSQL managée."
+        )
+    if PAYMENTS_MODE != "live":
+        warnings.append(
+            "XEER_PAYMENTS_MODE=sandbox : les paiements sont simulés, aucun "
+            "encaissement réel."
+        )
+    return warnings

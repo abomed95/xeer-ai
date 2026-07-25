@@ -5,6 +5,9 @@ python-dotenv
 email-validator
 requests
 
+# Base de données de production (PostgreSQL managé ; SQLite sinon)
+psycopg[binary]
+
 # RAG / IA
 openai
 chromadb
