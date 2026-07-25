@@ -87,6 +87,23 @@ CACBANK_API_KEY = os.getenv("CACBANK_API_KEY", "")
 CARD_GATEWAY_API_URL = os.getenv("CARD_GATEWAY_API_URL", "https://api.stripe.com/v1")
 CARD_GATEWAY_SECRET_KEY = os.getenv("CARD_GATEWAY_SECRET_KEY", "")
 
+# --- Secrets de signature des webhooks de paiement ---
+# Un callback non signé permettrait d'activer un abonnement sans payer : il
+# suffirait de poster la référence d'un paiement en attente. Chaque fournisseur
+# signe donc ses callbacks avec un secret partagé, vérifié à la réception.
+WAAFI_WEBHOOK_SECRET = os.getenv("WAAFI_WEBHOOK_SECRET", "")
+CACBANK_WEBHOOK_SECRET = os.getenv("CACBANK_WEBHOOK_SECRET", "")
+CARD_WEBHOOK_SECRET = os.getenv("CARD_WEBHOOK_SECRET", "")
+
+# Tolérance de rejeu des webhooks horodatés (secondes).
+WEBHOOK_TIMESTAMP_TOLERANCE = int(os.getenv("XEER_WEBHOOK_TOLERANCE", "300"))
+
+# --- Limitation de débit ---
+# Protège contre le bruteforce des mots de passe et l'abus de /ask (qui
+# consomme des crédits OpenAI à chaque appel). Compteurs en mémoire, donc par
+# instance : suffisant avec instance_count=1, à déporter vers Redis au-delà.
+RATE_LIMIT_ENABLED = os.getenv("XEER_RATE_LIMIT_ENABLED", "1") == "1"
+
 # --- Contrôles de sécurité au démarrage ---
 
 

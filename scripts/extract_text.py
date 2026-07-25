@@ -7,8 +7,25 @@ d'environnement :
   PDF_PATH      chemin du PDF source
   OCR_OUTPUT    fichier texte brut global
   OCR_PAGES_DIR dossier des pages extraites
-  OCR_LANG      langues Tesseract (défaut : "eng+ara+som", repli auto sur "eng")
+  OCR_LANG      langues Tesseract (défaut : "eng" — voir ci-dessous)
   TESSERACT_CMD chemin explicite vers le binaire tesseract (facultatif)
+
+Pourquoi « eng » pour un livre en somali ? Résultats mesurés sur 6 pages
+échantillons du corpus (taux de mots-outils somalis restitués) :
+
+  * Tesseract **n'a aucun modèle somali** : ni paquet Debian
+    `tesseract-ocr-som`, ni `som.traineddata` en amont (HTTP 404). Le somali
+    s'écrit en alphabet latin, donc `eng` restitue correctement les glyphes.
+  * Ajouter `ara` **dégrade** le résultat : 2298 → 2198 mots reconnus sur les
+    pages de corps, à taux somali égal, et l'« arabe » détecté sur les pages de
+    couverture est du charabia halluciné à partir du bruit du scan.
+  * Désactiver les dictionnaires anglais (`load_system_dawg=0`) ne change rien
+    en OEM 3 (LSTM), et les variantes de prétraitement ou de `--psm` testées
+    sont toutes égales ou pires que les réglages actuels.
+
+Conclusion : le facteur limitant est la qualité du scan source, pas les
+réglages. Relancer l'OCR ne fera pas mieux — n'y consacre pas de temps sans
+disposer d'un meilleur scan.
 """
 import io
 import os
@@ -23,7 +40,8 @@ from PIL import Image, ImageFilter, ImageOps
 PDF_PATH = Path(os.getenv("PDF_PATH", "data/raw/Xeer dhaqameed xeer ciise.pdf"))
 OUTPUT_RAW_TEXT = Path(os.getenv("OCR_OUTPUT", "data/processed/xeer_ciise_raw.txt"))
 OUTPUT_PAGES_DIR = Path(os.getenv("OCR_PAGES_DIR", "data/pages/raw"))
-OCR_LANG = os.getenv("OCR_LANG", "eng+ara+som")
+# « eng » et non « eng+ara+som » : mesures détaillées dans l'en-tête du module.
+OCR_LANG = os.getenv("OCR_LANG", "eng")
 
 
 def configure_tesseract() -> None:

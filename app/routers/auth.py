@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db, utcnow
 from app.deps import get_current_user
+from app.ratelimit import rate_limit
 from app.schemas import (
     AuthResponse,
     ChangePasswordRequest,
@@ -17,7 +18,12 @@ from app.services.accounts import get_user_by_email, user_out
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=AuthResponse)
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    # Limite la création de comptes en masse depuis une même adresse.
+    dependencies=[Depends(rate_limit("register", limit=5, window_seconds=3600))],
+)
 def register(payload: RegisterRequest):
     email = payload.email.lower().strip()
     if get_user_by_email(email):
@@ -35,7 +41,12 @@ def register(payload: RegisterRequest):
     return AuthResponse(token=create_token(user_id), user=UserOut(**user_out(user)))
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    # Ralentit le bruteforce de mots de passe.
+    dependencies=[Depends(rate_limit("login", limit=10, window_seconds=300))],
+)
 def login(payload: LoginRequest):
     user = get_user_by_email(payload.email)
     if user is None or not verify_password(payload.password, user["password_hash"]):
@@ -59,7 +70,11 @@ def update_profile(payload: UpdateProfileRequest, user: dict = Depends(get_curre
     return UserOut(**user_out(fresh))
 
 
-@router.put("/password")
+@router.put(
+    "/password",
+    # Empêche de deviner le mot de passe actuel par essais répétés.
+    dependencies=[Depends(rate_limit("change_password", limit=10, window_seconds=600))],
+)
 def change_password(payload: ChangePasswordRequest, user: dict = Depends(get_current_user)):
     if not verify_password(payload.current_password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect.")
